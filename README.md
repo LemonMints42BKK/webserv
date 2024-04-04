@@ -4,6 +4,6 @@
 ## [CI/CD Handnote](CI_CD_handnote.md)
 ******
 After accept Collaburation invited on email.
-Watch this video for example, how to work with Fork Repo.
+Watch this video for example, how to work with Fork Repo. [README](img/manage_fork.md)
 [![collaburator](https://img.youtube.com/vi/HbSjyU2vf6Y/0.jpg)](https://www.youtube.com/embed/HbSjyU2vf6Y?si=qyGaeifLQ4l6wMNA")
 
