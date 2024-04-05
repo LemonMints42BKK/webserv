@@ -1,4 +1,4 @@
-#include "Server.cpp"
+#include "Server.hpp"
 
 void Server::__init_config()
 {
