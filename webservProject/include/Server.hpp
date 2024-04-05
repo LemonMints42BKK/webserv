@@ -35,7 +35,7 @@ private:
 	// Private method
 	void __start_http(int socket);
 
-	void __parser_config(std::string const &Config_file);
+	// void __parser_config(std::string const &Config_file);
 
 	void __init_config(); // utils.cpp
 

@@ -1,12 +1,17 @@
 NAME = webserve
 
+INCLUDE = include
+
 CC = c++
+CFLAGS = -Wall -Werror -Wextra -I$(INCLUDE) -std=c++98
 
-CFLAGS = -Wall -Werror -Wextra -std=c++98
+SRCS = srcs/main.cpp \
+		srcs/Server.cpp \
+		srcs/start_server.cpp \
+		srcs/start_http.cpp \
+		srcs/utils.cpp
 
-SRCS = srcs/main.cpp srcs/Server.cpp srcs/start_server.cpp srcs/start_http.cpp srcs/utils.cpp
-
-HEADERS = srcs/Server.hpp
+HEADERS = include/Server.hpp
 
 OBJS = $(SRCS:.cpp=.o)
 
@@ -23,6 +28,6 @@ clean:
 	rm -f $(OBJS)
 
 fclean: clean
-	rm $(NAME)
+	rm -f $(NAME)
 
 re: fclean all
