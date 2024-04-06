@@ -51,7 +51,7 @@ private:
 	void __runMoniter(void);// startserver.cpp
 	void __loopCheckFd_workingSet(void); //startserver.cpp
 	// void __readDataFromClient(int i,bool &close_conn); // startserver.cpp
-	void __requestFromClient(); // startserver.cpp
+	void __requestFromClient(int socket); // startserver.cpp
 public:
 
 	// Constructor
