@@ -17,8 +17,22 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <errno.h>
+#include <algorithm>
 // this task should throw any error when unexpect
 // when socket ready to read the function call __start_http(int socket);
+
+void print_fd_set(fd_set *set) {
+    printf("FD_SET contents (binary representation):\n");
+    unsigned char *set_ptr = (unsigned char *)set;
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 7; j >= 0; --j) {
+            printf("%d", (set_ptr[i] >> j) & 1);
+        }
+        printf(" ");
+    }
+    printf("\n");
+}
+
 
 void Server::start_server()
 {
@@ -26,6 +40,8 @@ void Server::start_server()
 	__setUpMoniterSocket();
 	__runMoniter();
 }
+
+
 int Server::__createNewSocket(std::string ip ,std::string port)
 {
             int rc,on=1;
@@ -92,7 +108,7 @@ int Server::__createNewSocket(std::string ip ,std::string port)
                 perror("listen failed");
                 exit(1);
             }
-            printf("Server listening on port %d\n", std::atoi(port.c_str()));
+            std::cout << "Server listening on " << ip << ":" << port << std::endl;
             return sockfd;
 }
 
@@ -109,12 +125,12 @@ void Server::__getInputAndCreateListSocket(void)
 
 void Server::__setUpMoniterSocket(void)
 {
-	std::cout << "Set Up Moniter Socket" << std::endl;
+	// std::cout << "Set Up Moniter Socket" << std::endl;
 	FD_ZERO(&_master_set);
 	for (size_t i = 0; i < socketlist.size(); ++i) {
 		FD_SET(socketlist[i], &_master_set);
 	}
-	_max_sd = socketlist.size() + 3;
+	_max_sd = socketlist.back();
 }	
 
 void Server::__runMoniter(void)
@@ -123,8 +139,9 @@ void Server::__runMoniter(void)
 	{
 		int rc;
 		std::memcpy(&_working_set, &_master_set, sizeof(_master_set));
-		printf("Waiting on select()...\n");
+		// print_fd_set(&_master_set);
 		rc = select(_max_sd + 1, &_working_set, NULL, NULL,  NULL);
+		// print_fd_set(&_working_set);
 		if (rc < 0)
 		{
 			perror("select() failed");
@@ -139,6 +156,7 @@ void Server::__runMoniter(void)
 	} while (_end_server == false);  
 }
 
+
 void Server::__loopCheckFd_workingSet(void)
 {
 	bool close_conn = false;
@@ -146,23 +164,29 @@ void Server::__loopCheckFd_workingSet(void)
 	{
 		if (FD_ISSET(i, &_working_set))
 		{
-			if (!(i == static_cast<size_t>(socketlist.at(0))))
+			if (std::find(socketlist.begin(), socketlist.end(), i) != socketlist.end())
+			{	
+				std::cout << "fd : " << i << " listen from\n";
+				__requestFromClient(static_cast<int>(i)); // Accept new client
+				// readDataFromClient(i,close_conn); // Read data from client	
+			}
+			else
 			{
-				// readDataFromClient(i,close_conn); // Read data from client
 				try
 				{
+					printf("Socket ready to read %lu\n",i);
 					__start_http(i);
 				}
 				catch(const std::exception& e)
 				{		
-					throw ;
+					throw;
 				}
 				close_conn = true;
 			}
-			__requestFromClient(); // Accept new client
 			if (close_conn)
 			{
 				printf("Close fd : %lu\n",i);
+				printf("max_sd : %d\n",_max_sd);
 				close(i);
 				FD_CLR(i, &_master_set);
 				if (i == static_cast<size_t>(_max_sd))
@@ -175,25 +199,33 @@ void Server::__loopCheckFd_workingSet(void)
 	}/* End of loop through selectable descriptors */
 }
 
-void Server::__requestFromClient()
+void Server::__requestFromClient(int socket)
 {
 	int new_sd;
 	do
 	{
-		new_sd = accept(socketlist.at(0), NULL, NULL);
+		new_sd = accept(socket, NULL, NULL);
 		if (new_sd < 0)
 		{
-			if (errno != EWOULDBLOCK)
-			{
-				perror("  accept() failed");
-				_end_server = true;
-			}
+			// if (errno != EWOULDBLOCK)
+			// {
+			// 	printf("  accept() failed\n");
+			// 	_end_server = true;
+			// }
 			break;
 		}
-		printf("  New incoming connection - %d\n", new_sd);
+		int flags = fcntl(new_sd, F_GETFL, 0); // Get current flags
+		flags |= O_NONBLOCK; // Set non-blocking flag
+		int result = fcntl(new_sd, F_SETFL, flags);
+		if (result == -1) {
+			perror("fcntl(F_SETFL)");
+			// Handle error
+		}
+		printf("  New incoming connection %d\n", new_sd);
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;
+		printf("  New max_sd %d\n", _max_sd);
 	} while (new_sd != -1);
 }
 
