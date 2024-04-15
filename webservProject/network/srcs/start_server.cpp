@@ -18,6 +18,14 @@
 #include <cstdlib>
 #include <errno.h>
 #include <algorithm>
+#include <ostream>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <string>
+#include <fstream>
+#include <sys/wait.h>
+
 // this task should throw any error when unexpect
 // when socket ready to read the function call __start_http(int socket);
 
@@ -33,6 +41,11 @@ void print_fd_set(fd_set *set) {
     printf("\n");
 }
 
+void sigio_handler(int signum) {
+	static_cast<void>(signum);
+    printf("SIGIO received\n");
+    // Handle asynchronous I/O operation here
+}
 
 void Server::start_server()
 {
@@ -63,17 +76,7 @@ int Server::__createNewSocket(std::string ip ,std::string port)
                 exit(-1);
             }
             // Set socket for Nonblocking io
-            int flags = fcntl(sockfd, F_GETFL, 0); // Get current flags
-            if (flags == -1) {
-                perror("fcntl(F_GETFL)");
-                // Handle error
-            }
-            flags |= O_NONBLOCK; // Set non-blocking flag
-            int result = fcntl(sockfd, F_SETFL, flags);
-            if (result == -1) {
-                perror("fcntl(F_SETFL)");
-                // Handle error
-            }
+			__setNonBlocking(sockfd);
 
             // Set Up Rooms (Bind Socket): You inform the hotel staff (operating system) 
             // about the hotel's address (IP address) and room 
@@ -97,6 +100,7 @@ int Server::__createNewSocket(std::string ip ,std::string port)
 
             server_addr.sin_port = htons(std::atoi(port.c_str()));  // Convert port to network byte order
             // Bind the socket to the address and port
+			std::cout << "Binding to " << ip << ":" << port << std::endl;
             if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
                 perror("bind failed");
                 exit(1);
@@ -114,10 +118,13 @@ int Server::__createNewSocket(std::string ip ,std::string port)
 
 void Server::__getInputAndCreateListSocket(void)
 {
-	for (Listen it = _config.listen.begin(); it != _config.listen.end(); ++it) {
+	cfg::Listens listens;
+	_configs->getListen_getIp(listens, _configs->begin(), _configs->end());
+	for (Listen it = listens.begin(); it != listens.end(); ++it) {
 		const std::string& key = it->first;
 		const std::vector<std::string>& value = it->second;
 		for (unsigned int i = 0; i < value.size(); ++i) {
+			std::cout << key << " " << value.at(i) << std::endl;
 			socketlist.push_back(__createNewSocket(key, value.at(i)));
 		}
 	}
@@ -135,21 +142,17 @@ void Server::__setUpMoniterSocket(void)
 
 void Server::__runMoniter(void)
 {
+	// struct timeval timeout = {0, 500000}; // 0.5 seconds
 	do
 	{
 		int rc;
+
 		std::memcpy(&_working_set, &_master_set, sizeof(_master_set));
-		// print_fd_set(&_master_set);
+		printf("  Waiting on select()...\n");
 		rc = select(_max_sd + 1, &_working_set, NULL, NULL,  NULL);
-		// print_fd_set(&_working_set);
 		if (rc < 0)
 		{
 			perror("select() failed");
-			break;
-		}
-		if (rc == 0)
-		{
-			printf("select() timed out. End program.\n");
 			break;
 		}
 		__loopCheckFd_workingSet();
@@ -159,44 +162,58 @@ void Server::__runMoniter(void)
 
 void Server::__loopCheckFd_workingSet(void)
 {
-	bool close_conn = false;
+	// int sum = 0;
+	_close_conn = false;
 	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
 	{
+		bool is_socket_listen = std::find(socketlist.begin(), socketlist.end(), i) != socketlist.end();
 		if (FD_ISSET(i, &_working_set))
 		{
-			if (std::find(socketlist.begin(), socketlist.end(), i) != socketlist.end())
-			{	
-				std::cout << "fd : " << i << " listen from\n";
+			if (is_socket_listen)
 				__requestFromClient(static_cast<int>(i)); // Accept new client
-				// readDataFromClient(i,close_conn); // Read data from client	
-			}
 			else
 			{
-				try
-				{
-					printf("Socket ready to read %lu\n",i);
-					__start_http(i);
-				}
-				catch(const std::exception& e)
-				{		
-					throw;
-				}
-				close_conn = true;
-			}
-			if (close_conn)
-			{
-				printf("Close fd : %lu\n",i);
-				printf("max_sd : %d\n",_max_sd);
-				close(i);
-				FD_CLR(i, &_master_set);
-				if (i == static_cast<size_t>(_max_sd))
-				{
-					while (FD_ISSET(_max_sd, &_master_set) == false)
-								_max_sd -= 1;
-				}
+				__start_http(i);
+				__handle_close_conn(i);
 			}
 		}
 	}/* End of loop through selectable descriptors */
+}
+
+void Server::__handle_close_conn(size_t socketfd)
+{
+	if (_close_conn)
+	{
+		printf("Close fd : %lu\n", socketfd);
+		close(socketfd);
+		FD_CLR(socketfd, &_master_set);
+		delete _http[socketfd];
+		if (socketfd == static_cast<size_t>(_max_sd))
+		{
+			while (FD_ISSET(_max_sd, &_master_set) == false)
+						_max_sd -= 1;
+		}
+	}
+}
+
+void Server::__setCloseSocketFdListen(void)
+{
+	for (size_t i = 0; i < socketlist.size(); ++i)
+	{
+		close(socketlist[i]);
+		FD_CLR(socketlist[i], &_master_set);
+	}	
+}
+
+
+bool Server::__getCheckMaster_AllZero(void)
+{
+	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
+	{
+		if (FD_ISSET(i, &_master_set))
+			return false;
+	}
+	return true;
 }
 
 void Server::__requestFromClient(int socket)
@@ -206,22 +223,10 @@ void Server::__requestFromClient(int socket)
 	{
 		new_sd = accept(socket, NULL, NULL);
 		if (new_sd < 0)
-		{
-			// if (errno != EWOULDBLOCK)
-			// {
-			// 	printf("  accept() failed\n");
-			// 	_end_server = true;
-			// }
 			break;
-		}
-		int flags = fcntl(new_sd, F_GETFL, 0); // Get current flags
-		flags |= O_NONBLOCK; // Set non-blocking flag
-		int result = fcntl(new_sd, F_SETFL, flags);
-		if (result == -1) {
-			perror("fcntl(F_SETFL)");
-			// Handle error
-		}
+		__setNonBlocking(new_sd);
 		printf("  New incoming connection %d\n", new_sd);
+		_http[new_sd] = new Http(new_sd);
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;
@@ -229,3 +234,11 @@ void Server::__requestFromClient(int socket)
 	} while (new_sd != -1);
 }
 
+void Server::__setNonBlocking(int socket)
+{
+	int result = fcntl(socket, F_SETFL, O_NONBLOCK);
+	if (result == -1) {
+		perror("fcntl(F_SETFL)");
+		// Handle error
+	}
+}

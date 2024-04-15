@@ -13,19 +13,10 @@ Server::Server()
 	__init_config();
 }
 
-// inconstruction
-Server::Server(std::string const &config_file)
+Server::Server(const std::string name_file)
 {
-	// this task should throw any error when unexpect
-
-	// in production parser config
-	// __parser_config("default");
-
-	// in develop use init
-	(void) config_file;
-	__init_config();
+	_configs = new cfg::Configs(name_file);
 }
-
 // inconstruction
 // copy constructor
 Server::Server(Server const &ins)

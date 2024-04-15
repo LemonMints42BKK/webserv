@@ -1,0 +1,12 @@
+
+
+
+http {
+    server {
+            server_name Hello;
+            error_page Hello;
+            location test {
+                    root d;
+            }
+    }
+}

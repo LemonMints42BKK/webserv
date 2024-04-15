@@ -1,33 +1,14 @@
-NAME = webserv
 
-INCLUDE = include
-
-CC = c++
-CFLAGS = -Wall -Werror -Wextra -I$(INCLUDE) -std=c++98
-
-SRCS = srcs/main.cpp \
-		srcs/Server.cpp \
-		srcs/start_server.cpp \
-		srcs/start_http.cpp \
-		srcs/utils.cpp
-
-HEADERS = include/Server.hpp
-
-OBJS = $(SRCS:.cpp=.o)
-
-all: $(NAME)
-	./$(NAME)
-
-$(OBJS): %.o: %.cpp $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+all:
+	make -C parser
+	make -C network
+	c++ main_test.cpp ./parser/parser_webserve.a ./network/network.a -o webserve
 
 clean:
-	rm -f $(OBJS)
+	make clean -C parser
+	make clean -C network
 
 fclean: clean
-	rm -f $(NAME)
-
-re: fclean all
+	make fclean -C parser
+	make fclean -C network
+	rm -f webserve

@@ -5,14 +5,14 @@
 #include <vector>
 #include <map>
 #include <sys/select.h>
+#include "Http.hpp"
+#include "../../parser/Configs.hpp"
+
 typedef struct Location
 {
 	std::string root;
-	std::string index;
-	std::string try_files;
-	std::string rewrite;
-	std::string error_page;
 } Location;
+
 
 typedef struct Config
 {
@@ -21,6 +21,7 @@ typedef struct Config
 	std::vector<std::string> index;
 	std::map<std::string, Location> location;
 } Config;
+
 
 typedef std::map<std::string, std::vector<std::string> >::const_iterator Listen;
 typedef std::vector<std::string>::const_iterator Port;
@@ -31,7 +32,8 @@ class Server
 {
 private:
 	Config _config;
-
+	cfg::Configs *_configs;
+	Http *_http[FD_SETSIZE];
 	// Private method
 	void __start_http(int socket);
 
@@ -40,9 +42,12 @@ private:
 	void __init_config(); // utils.cpp
 	// start server group
 	fd_set _working_set;
+	int log_output;
 	fd_set _master_set;
+	fd_set _master_set_write;
 	int _max_sd;
 	bool _end_server;
+	bool _close_conn;
 	std::vector<int> socketlist;
 	
 	int	__createNewSocket(std::string ip ,std::string port); // startserver.cpp
@@ -50,16 +55,23 @@ private:
 	void __setUpMoniterSocket(void); // startserver.cpp
 	void __runMoniter(void);// startserver.cpp
 	void __loopCheckFd_workingSet(void); //startserver.cpp
+	void __setNonBlocking(int socket); // startserver.cpp
+
+	void __setCloseSocketFdListen(void); // startserver.cpp
+	void __setOpenSocketFdListen(void); // startserver.cpp
+	
+	bool __getCheckMaster_AllZero(void); // startserver.cpp
+	void __handle_close_conn(size_t i); // startserver.cpp
 	// void __readDataFromClient(int i,bool &close_conn); // startserver.cpp
 	void __requestFromClient(int socket); // startserver.cpp
 public:
 
 	// Constructor
 	Server(); // Server.cpp
-	Server(std::string const &config_file); // Server.cpp
+	// Server(std::string const &config_file); // Server.cpp
 	Server(Server const &ins); // Server.cpp
 	~Server(); // Server.cpp
-
+	Server(const std::string name_file); // get config from parser server.cpp
 	// Overload operator
 	Server & operator=(Server const &rhs); // Server.cpp
 	

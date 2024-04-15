@@ -1,0 +1,28 @@
+
+
+
+
+http {
+     server {
+          listen 80   ;      index index.html   ;
+          listen 81 ;
+          server_name localhost;
+          listen inter:port ;
+          index index.htm index.php    ;
+          root ./somedir/server ;
+
+          error_page error.htm  ;
+
+          client_max_body       1000;
+
+          location / {
+               root ./new/location ;
+          }
+
+          location /something {
+               index something.html something.php;
+          }
+     }
+}
+
+
