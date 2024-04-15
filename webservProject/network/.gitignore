@@ -1,0 +1,8 @@
+a.out
+client_huge
+webserv
+output.txt
+.vscode
+client_normal
+test.c
+*.o
