@@ -1,4 +1,5 @@
 #include "Server.hpp"
+
 #include <fcntl.h>
 void Server::__init_config()
 {

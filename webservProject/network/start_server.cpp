@@ -1,6 +1,7 @@
 // this file for angle Prem
 
 #include "Server.hpp"
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
@@ -146,7 +147,7 @@ void Server::__runMoniter(void)
 	do
 	{
 		int rc;
-
+		print_fd_set(&_master_set);
 		std::memcpy(&_working_set, &_master_set, sizeof(_master_set));
 		printf("  Waiting on select()...\n");
 		rc = select(_max_sd + 1, &_working_set, NULL, NULL,  NULL);
@@ -173,7 +174,8 @@ void Server::__loopCheckFd_workingSet(void)
 				__requestFromClient(static_cast<int>(i)); // Accept new client
 			else
 			{
-				__start_http(i);
+				//__start_http(i); // replace http.readSocket() here
+				_http[i]->readSocket();
 				__handle_close_conn(i);
 			}
 		}
@@ -222,11 +224,12 @@ void Server::__requestFromClient(int socket)
 	do
 	{
 		new_sd = accept(socket, NULL, NULL);
+		printf("  New incoming connection %d\n", new_sd);
 		if (new_sd < 0)
 			break;
 		__setNonBlocking(new_sd);
 		printf("  New incoming connection %d\n", new_sd);
-		_http[new_sd] = new Http(new_sd);
+		_http[new_sd] = new http::Http(new_sd, _configs);
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;

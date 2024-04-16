@@ -1,12 +1,15 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include "Configs.hpp"
+#include "Http.hpp"
+
+
 #include <string>
 #include <vector>
 #include <map>
 #include <sys/select.h>
-#include "Http.hpp"
-#include "../../parser/Configs.hpp"
+
 
 typedef struct Location
 {
@@ -33,9 +36,11 @@ class Server
 private:
 	Config _config;
 	cfg::Configs *_configs;
-	Http *_http[FD_SETSIZE];
+	http::Http *_http[FD_SETSIZE];
+
+	
 	// Private method
-	void __start_http(int socket);
+	// void __start_http(int socket);
 
 	// void __parser_config(std::string const &Config_file);
 
@@ -66,6 +71,7 @@ private:
 	void __requestFromClient(int socket); // startserver.cpp
 public:
 
+	Server(cfg::Configs *configs);
 	// Constructor
 	Server(); // Server.cpp
 	// Server(std::string const &config_file); // Server.cpp
