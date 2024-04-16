@@ -1,6 +1,6 @@
 
-#include "./parser/Configs.hpp"
-#include "./network/include/Server.hpp"
+#include "Configs.hpp"
+#include "Server.hpp"
 int main(void)
 {
     // try{
@@ -24,9 +24,16 @@ int main(void)
     // catch (std::exception const &e) {
     //     std::cerr << e.what() << std::endl;
     // }
-    Server server;
+
+
+    
 
     try {
+
+        cfg::Configs configs("configs/default.conf");
+
+        Server server(&configs);
+
         server.start_server();
     }
     catch (std::exception const &e) {

@@ -13,6 +13,11 @@ Server::Server()
 	__init_config();
 }
 
+Server::Server(cfg::Configs *configs)
+{
+	_configs = configs;
+}
+
 Server::Server(const std::string name_file)
 {
 	_configs = new cfg::Configs(name_file);

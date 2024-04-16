@@ -1,4 +1,5 @@
 #include "Server.hpp"
+
 #include <unistd.h>
 #include <stdexcept>
 #include <iostream>

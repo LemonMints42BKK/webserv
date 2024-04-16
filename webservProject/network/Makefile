@@ -1,26 +1,30 @@
-NAME = network.a
+NAME = libnetwork.a
 
-INCLUDE = include
+PARSER_PATH = ../parser
+HTTP_PATH = ../http
+
+INCLUDES = -I$(PARSER_PATH) -I$(HTTP_PATH)
 
 CC = c++
-CFLAGS = -Wall -Werror -Wextra -I$(INCLUDE) -std=c++98
 
-SRCS = 	srcs/Server.cpp \
-		srcs/start_server.cpp \
-		srcs/start_http.cpp \
-		srcs/utils.cpp 
+CFLAGS = -Wall -Werror -Wextra -std=c++98
 
-HEADERS = include/Server.hpp
+SRCS = 	Server.cpp \
+		start_server.cpp \
+		utils.cpp 
+#		start_http.cpp \
+
+HEADERS = Server.hpp
 
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
 $(OBJS): %.o: %.cpp $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(NAME): $(OBJS)
-	ar rcs $(NAME) $(OBJS) ../parser/libparser.a 
+	ar rcs $(NAME) $(OBJS)
 clean:
 	rm -f $(OBJS)
 
@@ -29,14 +33,14 @@ fclean: clean
 
 re: fclean all
 
-client_huge:
-	c++ ./client/client_1.cpp -o client_huge
+# client_huge:
+# 	c++ ./client/client_1.cpp -o client_huge
 
-client_normal:
-	cc ./client/client.c -o client_normal
+# client_normal:
+# 	cc ./client/client.c -o client_normal
 
-run:
-	make -C ../parser
-	make
-	c++ ./srcs/main.cpp network.a ../parser/libparser.a 
-	./a.out
+# run:
+# 	make -C ../parser
+# 	make
+# 	c++ ./srcs/main.cpp network.a ../parser/libparser.a 
+# 	./a.out
