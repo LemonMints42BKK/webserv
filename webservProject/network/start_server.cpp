@@ -229,7 +229,7 @@ void Server::__requestFromClient(int socket)
 			break;
 		__setNonBlocking(new_sd);
 		printf("  New incoming connection %d\n", new_sd);
-		_http[new_sd] = new http::Httptest(new_sd, _configs);
+		_http[new_sd] = new http::HttpV1(new_sd, _configs);
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;

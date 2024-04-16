@@ -8,7 +8,11 @@
 namespace http
 {
 	#define HTTP_BUFFER 65000
+	#define HEADER 1
+	#define BODY 2
 
+	class Request;
+	
 	class Http
 	{
 		protected:
@@ -17,19 +21,41 @@ namespace http
 			std::stringstream _data;
 		public:
 			Http(int socket, cfg::Configs *configs);
-			virtual bool readSocket() = 0;
 			virtual ~Http();
+			virtual bool readSocket() = 0;
 	};
 
 	class Httptest : public Http
 	{
 		public:
 			Httptest(int socket, cfg::Configs *configs);
-			bool readSocket();
 			~Httptest();
+			bool readSocket();
+	};
+
+	class HttpV1 : public Http
+	{
+		private:
+			// int _stage;
+			bool endMessage(const char *buffer) const;
+			void parserHeader();
+
+		public:
+			HttpV1(int socket, cfg::Configs *configs);
+			~HttpV1();
+			bool readSocket();
+			
+	};
+
+	class Request
+	{
+		private:
+			std::string _method;
+			std::string _location;
+		public:
+			Request();
+			~Request();
 	};
 }
-
-
 
 #endif

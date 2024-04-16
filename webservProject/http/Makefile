@@ -9,7 +9,8 @@ CFLAGS = -Wall -Werror -Wextra -std=c++98
 INCLUDES = -I$(PARSER_PATH)
 
 SRCS =	Http.cpp \
-		Httptest.cpp
+		Httptest.cpp \
+		HttpV1.cpp
 
 HEADERS = Http.hpp
 

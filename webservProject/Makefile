@@ -18,13 +18,16 @@ LIB = -Lparser -lparser \
 		-Lnetwork -lnetwork \
 		-Lhttp -lhttp
 
+LIB_SRCS = $(HTTP_PATH)/*.cpp $(PARSER_PATH)/*.cpp $(NETWORK_PATH)/*.cpp 
+
 SRCS = main.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
-$(OBJS): %.o: %.cpp Makefile
+
+$(OBJS): %.o: %.cpp Makefile $(LIB_SRCS)
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 $(NAME): $(OBJS)

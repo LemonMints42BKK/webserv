@@ -1,3 +1,6 @@
 .vscode
 *.o
-webserv
+webserve
+libparser.a
+libhttp.a
+libnetwork.a

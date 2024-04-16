@@ -36,8 +36,8 @@ re: fclean all
 # client_huge:
 # 	c++ ./client/client_1.cpp -o client_huge
 
-# client_normal:
-# 	cc ./client/client.c -o client_normal
+client_normal:
+	cc ./client/client.c -o client_normal
 
 # run:
 # 	make -C ../parser
