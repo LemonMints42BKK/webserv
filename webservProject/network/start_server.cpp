@@ -175,7 +175,7 @@ void Server::__loopCheckFd_workingSet(void)
 			else
 			{
 				//__start_http(i); // replace http.readSocket() here
-				_http[i]->readSocket();
+				_close_conn = _http[i]->readSocket();
 				__handle_close_conn(i);
 			}
 		}
@@ -229,7 +229,7 @@ void Server::__requestFromClient(int socket)
 			break;
 		__setNonBlocking(new_sd);
 		printf("  New incoming connection %d\n", new_sd);
-		_http[new_sd] = new http::Http(new_sd, _configs);
+		_http[new_sd] = new http::Httptest(new_sd, _configs);
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;

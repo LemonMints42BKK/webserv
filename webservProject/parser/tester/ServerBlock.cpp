@@ -24,15 +24,6 @@ TEST(SeverBlock, test_3_error) {
 
 }
 
-TEST(SeverBlock, test_5_error) {
-
-    try{
-        cfg::Configs configs("../FileConfTest/TestServerBlock/test_5_error.txt");
-    }catch (std::exception const &e) {
-        EXPECT_STREQ(e.what(), "validate server not have location");
-    }
-
-}
 
 TEST(SeverBlock, test_2_error) {
 
@@ -50,6 +41,26 @@ TEST(SeverBlock, test_4_error) {
         cfg::Configs configs("../FileConfTest/TestServerBlock/test_4_error.txt");
     }catch (std::exception const &e) {
         EXPECT_STREQ(e.what(), "Error: server '{' not found");
+    }
+
+}
+
+TEST(SeverBlock, test_5_error) {
+
+    try{
+        cfg::Configs configs("../FileConfTest/TestServerBlock/test_5_error.txt");
+    }catch (std::exception const &e) {
+        EXPECT_STREQ(e.what(), "validate listen on server");
+    }
+
+}
+
+TEST(SeverBlock, test_6_error) {
+
+    try{
+        cfg::Configs configs("../FileConfTest/TestServerBlock/test_6_error.txt");
+    }catch (std::exception const &e) {
+        EXPECT_STREQ(e.what(), "validate server not have location");
     }
 
 }

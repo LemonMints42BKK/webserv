@@ -1,0 +1,11 @@
+
+
+
+
+
+http { 
+     server {
+          server_name Hello;
+          listen 80;
+     }
+}

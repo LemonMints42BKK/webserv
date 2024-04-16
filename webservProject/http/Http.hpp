@@ -11,16 +11,23 @@ namespace http
 
 	class Http
 	{
-		private:
+		protected:
 			int _socket;
 			cfg::Configs const *_configs;
 			std::stringstream _data;
 		public:
 			Http(int socket, cfg::Configs *configs);
-			void readSocket();
-			~Http();
+			virtual bool readSocket() = 0;
+			virtual ~Http();
 	};
 
+	class Httptest : public Http
+	{
+		public:
+			Httptest(int socket, cfg::Configs *configs);
+			bool readSocket();
+			~Httptest();
+	};
 }
 
 
