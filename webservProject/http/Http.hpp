@@ -8,10 +8,30 @@
 namespace http
 {
 	#define HTTP_BUFFER 65000
-	#define HEADER 1
-	#define BODY 2
+	#define METHOD 1
+	#define HEADER 2
+	#define BODY 3
 
-	class Request;
+	class Request
+	{
+		private:
+			std::string _method;
+			std::string _location;
+			std::map<std::string, std::string> _header;
+		public:
+			Request();
+			~Request();
+
+			void setMethod(std::string const &method);
+			std::string const &getMethod() const;
+
+			void setLocation(std::string const &location);
+			std::string const &getLocation() const;
+
+			bool setHeader(std::string const &key, std::string const &value);
+			std::string const &getHeader(std::string const &key);
+
+	};
 	
 	class Http
 	{
@@ -36,26 +56,21 @@ namespace http
 	class HttpV1 : public Http
 	{
 		private:
-			// int _stage;
+			int _stage;
+			Request _request;
 			bool endMessage(const char *buffer) const;
-			void parserHeader();
+			bool parser();
+			bool parserFirstLine();
+			bool parserHeader();
 
 		public:
 			HttpV1(int socket, cfg::Configs *configs);
 			~HttpV1();
 			bool readSocket();
-			
+			std::string trim(std::string &string) const;
 	};
 
-	class Request
-	{
-		private:
-			std::string _method;
-			std::string _location;
-		public:
-			Request();
-			~Request();
-	};
+
 }
 
 #endif
