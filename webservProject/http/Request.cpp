@@ -36,6 +36,5 @@ bool http::Request::setHeader(std::string const &key, std::string const &value)
 
 std::string const &http::Request::getHeader(std::string const &key)
 {
-	if (_header.count(key)) return (_header[key]);
-	return ("");
+	return _header[key];
 }

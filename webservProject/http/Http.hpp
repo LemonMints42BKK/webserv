@@ -62,6 +62,8 @@ namespace http
 			bool parser();
 			bool parserFirstLine();
 			bool parserHeader();
+			bool tryFiles();
+			bool errorPage(int status);
 
 		public:
 			HttpV1(int socket, cfg::Configs *configs);

@@ -7,7 +7,8 @@
 #include <iostream>
 
 
-http::HttpV1::HttpV1(int socket, cfg::Configs *configs) : _stage(METHOD), Http(socket, configs)
+http::HttpV1::HttpV1(int socket, cfg::Configs *configs) 
+	: Http(socket, configs), _stage(METHOD)
 {
 
 }
@@ -81,6 +82,9 @@ bool http::HttpV1::parserHeader()
 		if (!buffer.length()) {
 
 			// check location root if not exist return 404
+			if (!tryFiles()) {
+				// return 404
+			}
 			
 			//check if has content body
 			if (_request.getHeader("Content-Type").length()) {
@@ -119,7 +123,7 @@ bool http::HttpV1::parser()
 	}
 
 	if (_stage == HEADER) {
-		if (!parserHeader) return (false);
+		if (!parserHeader()) return (false);
 	}
 
 	// << _socket << std::endl << _data.str() << std::endl;
@@ -175,6 +179,8 @@ bool http::HttpV1::parser()
 	// 		<< std::endl;
 	// 	send(_socket, oss.str().c_str(), oss.str().length(), 0);
 	// }
+
+	return (true);
 }
 
 std::string http::HttpV1::trim(std::string &str) const
@@ -183,4 +189,26 @@ std::string http::HttpV1::trim(std::string &str) const
 	if (start == std::string::npos) return ("");
 	std::size_t end = str.find_last_not_of(" \t\n\r");
 	return str.substr(start, end - start + 1);
+}
+
+bool http::HttpV1::tryFiles()
+{
+	std::string location = _request.getLocation();
+
+
+	return (false);
+}
+
+bool http::HttpV1::errorPage(int status)
+{
+	switch (status)
+	{
+	case 404:
+		/* code */
+		break;
+	
+	default:
+		break;
+	}
+	return (true);
 }

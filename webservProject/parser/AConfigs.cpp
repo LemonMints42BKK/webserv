@@ -89,43 +89,32 @@ std::ostream & operator<<(std::ostream &o, cfg::AConfigs const &i)
 {
 	cfg::config_itc it = i.begin();
 	cfg::config_itc it_in;
-	cfg::Worker_processes *work;
-	cfg::Http *http;
-	cfg::Server *server;
-	cfg::Index *index;
+	// cfg::Worker_processes *work;
+	cfg::AGroup *group;
+	// cfg::Http *http;
+	// cfg::Server *server;
+	// cfg::Index *index;
 	cfg::Listen *listen;
 	cfg::AConfigString *aConfigString;
 	cfg::Location *location;
+	cfg::AConfigVectorString *aConfigVectorString;
 	
 	while(it != i.end()) {
 
-		o << i.indent();
-
-		if ((work = dynamic_cast<cfg::Worker_processes*>(*it)))
-			o << *work << std::endl;
+		o << (*it)->indent();
 		
-		if ((http = dynamic_cast<cfg::Http*>(*it))) {
-			o << http->getType() << " {" << std::endl;
-			o << *http;
-			o << i.indent() << "}" << std::endl;
+		if ((group = dynamic_cast<cfg::AGroup*>(*it))) {
+			o << group->getType();
+			if ((location = dynamic_cast<cfg::Location*>(*it))) {
+				o << " " << location->getLocation();
+			}
+			o << " {" << std::endl;
+			o << *group;
+			o << group->indent() << "}" << std::endl;
 		}
 
-		if ((server = dynamic_cast<cfg::Server*>(*it))) {
-			// o << "server size: " << server->size() << std::endl;
-			o << server->getType() << " {" << std::endl;
-			o << *server;
-			o << i.indent() << "}" << std::endl;
-		}
-
-		if ((location = dynamic_cast<cfg::Location*>(*it))) {
-			// o << "locationsize: " << location>size() << std::endl;
-			o << location->getType() << " " << location->getLocation() << " {" << std::endl;
-			o << *location;
-			o << i.indent() << "}" << std::endl;
-		}
-
-		if ((index = dynamic_cast<cfg::Index*>(*it)))
-			o << *index << std::endl;
+		if ((aConfigVectorString = dynamic_cast<cfg::AConfigVectorString*>(*it)))
+			o << *aConfigVectorString << std::endl;
 
 		if ((listen = dynamic_cast<cfg::Listen*>(*it)))
 			o << *listen;

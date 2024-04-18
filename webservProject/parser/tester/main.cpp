@@ -32,11 +32,14 @@ void test_server(std::string const &server_name, std::string const &location, cf
     }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+    if (argc != 2) {
+        std::cerr << "Use: ./prog configs_file" << std::endl;
+    }
     try{
         // std::ifstream file("default.conf");
-        cfg::Configs configs("default.conf");
+        cfg::Configs configs(argv[1]);
         configs.setGroupLevel(0, configs.begin(), configs.end());
         
         std::cout << configs << std::endl;
