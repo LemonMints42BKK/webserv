@@ -89,6 +89,8 @@ namespace cfg
 				std::string const &location);
 			std::vector<std::string> const & getIndex(std::string const &server_name, 
 				std::string const &location);
+			std::vector<std::string> const & getAllow(std::string const &server_name, 
+				std::string const &location);
 			int const & getClientMaxBody(std::string const &server_name);
 			std::string const & getErrorPage(std::string const &server_name);
 			std::vector<std::pair<std::string, std::string> >  const & getListen(std::string server_name);
@@ -99,6 +101,7 @@ namespace cfg
 		private:
 			std::map<std::string, std::map<std::string, std::string> > _root;
 			std::map<std::string, std::map<std::string, std::vector<std::string> > > _index;
+			std::map<std::string, std::map<std::string, std::vector<std::string> > > _allow;
 			std::map<std::string, int> _client_max_body;
 			std::map<std::string, std::string > _error_page;
 			std::map<std::string, std::vector<std::pair<std::string, std::string> > > _listen;
@@ -111,6 +114,8 @@ namespace cfg
 			std::string const & getRoot(std::string const &server_name, 
 				std::string const &location);
 			std::vector<std::string> const & getIndex(std::string const &server_name, 
+				std::string const &location);
+			std::vector<std::string> const & getAllow(std::string const &server_name, 
 				std::string const &location);
 			int const & getClientMaxBody(std::string const &server_name);
 			std::string const & getErrorPage(std::string const &server_name);
@@ -127,6 +132,7 @@ namespace cfg
 			std::vector<std::pair<std::string, std::string> > _listen;
 			std::map<std::string, std::string> _location; // <location, root>
 			std::map<std::string, std::vector<std::string> > _index; // <location, indexs>
+			std::map<std::string, std::vector<std::string> > _allow; // <location, indexs>
 			void init(std::ifstream &file);
 			void validate() const;
 			void setServerName();
@@ -136,6 +142,7 @@ namespace cfg
 			void setErrorPage();
 			void setClientMaxBody();
 			void setIndex();
+			void setAllow();
 		public:
 			Server(std::ifstream &file);
 			~Server();
@@ -146,6 +153,7 @@ namespace cfg
 			int const & getClientMaxBody() const;
 			std::map<std::string, std::string> const & getLocation() const;
 			std::map<std::string, std::vector<std::string> > const & getIndex() const;
+			std::map<std::string, std::vector<std::string> > const & getAllow() const;
 			std::vector<std::pair<std::string, std::string> > const & getListen() const;
 			
 	};
@@ -156,16 +164,19 @@ namespace cfg
 			std::string _location;
 			std::string _root;
 			std::vector<std::string> _index;
+			std::vector<std::string> _allow;
 			void init(std::ifstream &file);
 			void validate() const;
 			void setRoot();
 			void setIndex();
+			void setAllow();
 		public:
 			Location(std::ifstream &file);
 			~Location();
 			std::string const &getLocation() const;
 			std::string const &getRoot() const;
 			std::vector<std::string> const &getIndex() const;
+			std::vector<std::string> const &getAllow() const;
 	};
 	
 	/* -------------------------- single config ---------------------------- */
@@ -237,6 +248,34 @@ namespace cfg
 			~Error_page();
 	};
 
+	/* ---------------------- vecter<string> -------------------- */
+	
+	class AConfigVectorString : public AConfig
+	{
+		private:
+			std::vector<std::string> _datas;
+		public:
+			AConfigVectorString(std::ifstream &file, std::string const &type);
+			~AConfigVectorString();
+			std::vector<std::string>::const_iterator begin() const;
+			std::vector<std::string>::const_iterator end() const;
+			std::vector<std::string> const & getDatas() const;
+	};
+	class Index : public AConfigVectorString
+	{
+		public:
+			Index(std::ifstream &file);
+			~Index();
+	};
+
+	class Allow : public AConfigVectorString
+	{
+		public:
+			Allow(std::ifstream &file);
+			~Allow();
+	};
+
+
 	/* ---------------------------- etc ------------------------- */
 	class Listen : public AConfig
 	{
@@ -250,21 +289,12 @@ namespace cfg
 			std::pair<std::string, std::string> const & getListen() const;
 	};
 
-	class Index : public AConfig
-	{
-		private:
-			std::vector<std::string> _indexs;
-		public:
-			Index(std::ifstream &file);
-			~Index();
-			std::vector<std::string>::const_iterator begin() const;
-			std::vector<std::string>::const_iterator end() const;
-	};
+	
 }
 
 std::ostream & operator<<(std::ostream &o, cfg::AConfigs const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigInt const &i);
-std::ostream & operator<<(std::ostream &o, cfg::Index const &i);
+std::ostream & operator<<(std::ostream &o, cfg::AConfigVectorString const &i);
 std::ostream & operator<<(std::ostream &o, cfg::Listen const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigString const &i);
 #endif

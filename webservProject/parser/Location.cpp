@@ -15,6 +15,7 @@ cfg::Location::Location(std::ifstream &file) : AGroup(file, "location")
 	init(file);
 	setRoot();
 	setIndex();
+	setAllow();
 	// validate();
 }
 
@@ -37,6 +38,8 @@ void cfg::Location::init(std::ifstream &file)
 				dir = new Root(file);
 			else if (directive == "redirect")
 				dir = new Redirect(file);
+			else if (directive == "allow")
+				dir = new Allow(file);
 			else
 				throw(std::runtime_error(this->getType() + "Error: unknow directive " + directive));
 
@@ -59,11 +62,11 @@ void cfg::Location::setRoot()
 	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
 		Root *root;
 		if ((root = dynamic_cast<cfg::Root*>(*it))) {
-			_root = (*root).str();
+			_root = root->str();
 			n++ ;
 		}
-		if (n > 1) throw (std::runtime_error("validate root on location"));
 	}
+	if (n > 1) throw (std::runtime_error("validate root on location"));
 }
 
 std::string const & cfg::Location::getRoot() const
@@ -84,6 +87,23 @@ void cfg::Location::setIndex()
 std::vector<std::string> const & cfg::Location::getIndex() const
 {
 	return (_index);
+}
+
+void cfg::Location::setAllow()
+{
+	Allow *allow;
+	std::size_t n = 0;
+	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
+		if((allow = dynamic_cast<cfg::Allow*>(*it))) {
+			_allow = allow->getDatas();
+			n++;
+		}
+		if (n > 1) throw (std::runtime_error("validate allow on location"));
+	}
+}
+
+std::vector<std::string> const &cfg::Location::getAllow() const{
+	return (_allow);
 }
 
 void cfg::Location::validate() const

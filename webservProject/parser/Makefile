@@ -9,6 +9,7 @@ SRCS =	AConfig.cpp \
 		AGroup.cpp \
 		AConfigString.cpp \
 		AConfigInt.cpp \
+		AConfigVectorString.cpp \
 		Configs.cpp \
 		Worker_processes.cpp \
 		Client_max_body.cpp \
@@ -20,7 +21,8 @@ SRCS =	AConfig.cpp \
 		Root.cpp \
 		Redirect.cpp \
 		Error_page.cpp \
-		Location.cpp
+		Location.cpp \
+		Allow.cpp
 
 HEADERS = Configs.hpp
 

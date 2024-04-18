@@ -11,6 +11,7 @@ cfg::Server::Server(std::ifstream &file) : AGroup(file, "server")
 	setErrorPage();
 	setClientMaxBody();
 	setIndex();
+	setAllow();
 	// validate();
 }
 
@@ -41,6 +42,8 @@ void cfg::Server::init(std::ifstream &file)
 				dir = new Error_page(file);
 			else if (directive == "client_max_body")
 				dir = new Client_max_body(file);
+			else if (directive == "allow")
+				dir = new Allow(file);
 			else
 				throw(std::runtime_error(this->getType() + "Error: unknow directive " + directive));
 
@@ -98,18 +101,18 @@ void cfg::Server::setRoot()
 	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
 		Root *root;
 		if ((root = dynamic_cast<cfg::Root*>(*it))) {
-			_root = (*root).str();
+			_root = root->str();
 			n++ ;
 		}
-		if (n > 1) throw (std::runtime_error("validate root on location"));
 	}
+	if (n > 1) throw (std::runtime_error("validate root on server 1"));
 
 	if (n == 0) {
 		for (config_itc it = _configs.begin(); it != _configs.end(); it++) {
 			Location *location;
 			if ((location = dynamic_cast<cfg::Location*>(*it))) {
-				if(!count_root((*location).begin(), (*location).end()))
-					throw (std::runtime_error("validate root on location"));
+				if(!location->getRoot().length())
+					throw (std::runtime_error("validate root on server 2"));
 			}
 		}
 	}
@@ -206,6 +209,34 @@ void cfg::Server::setIndex()
 std::map<std::string, std::vector<std::string> > const & cfg::Server::getIndex() const
 {
 	return (_index);
+}
+
+void cfg::Server::setAllow()
+{
+	Allow *allow;
+	Location *location;
+	std::vector<std::string> server_allow;
+	std::size_t n = 0;
+	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
+		if((allow = dynamic_cast<cfg::Allow*>(*it))) {
+			server_allow = allow->getDatas();
+			n++ ;
+		}
+		if (n > 1) throw (std::runtime_error("validate allow on server"));
+	}
+	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
+		if((location = dynamic_cast<cfg::Location*>(*it))) {
+			if(location->getAllow().size())
+				_index[location->getLocation()] = location->getAllow();
+			else
+				_index[location->getLocation()] = server_allow;
+		}
+	}
+}
+
+std::map<std::string, std::vector<std::string> > const & cfg::Server::getAllow() const
+{
+	return (_allow);
 }
 
 void cfg::Server::validate() const

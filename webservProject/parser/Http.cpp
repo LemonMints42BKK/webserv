@@ -46,6 +46,7 @@ void cfg::Http::setServer()
 			n++;
 			_root[server->getServerName()] = server->getLocation();
 			_index[server->getServerName()] = server->getIndex();
+			_allow[server->getServerName()] = server->getAllow();
 			_client_max_body[server->getServerName()] = server->getClientMaxBody();
 			_error_page[server->getServerName()] = server->getErrorPage();
 			_listen[server->getServerName()] = server->getListen();
@@ -72,6 +73,16 @@ std::vector<std::string> const & cfg::Http::getIndex(std::string const &server_n
 	if (!_index[server_name].count(location))
 		throw (std::runtime_error("getIndex location " + location + " not found"));
 	return (_index[server_name][location]);
+}
+
+std::vector<std::string> const & cfg::Http::getAllow(std::string const &server_name, 
+	std::string const &location)
+{
+	if (!_allow.count(server_name))
+		throw (std::runtime_error("getIndex server_name " + server_name + " not found"));
+	if (!_allow[server_name].count(location))
+		throw (std::runtime_error("getIndex location " + location + " not found"));
+	return (_allow[server_name][location]);
 }
 
 int const & cfg::Http::getClientMaxBody(std::string const &server_name)
