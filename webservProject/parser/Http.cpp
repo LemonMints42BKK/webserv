@@ -25,6 +25,8 @@ void cfg::Http::init(std::ifstream &file)
 			if (directive == "}") break;
 			else if (directive == "server")
 				dir = new Server(file);
+			else if (directive == "types")
+				dir = new Types(file);
 			else
 				throw(std::runtime_error(this->getType() + "Error: unknow directive " + directive));
 

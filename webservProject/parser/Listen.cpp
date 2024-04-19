@@ -1,8 +1,15 @@
 #include "Configs.hpp"
 
-cfg::Listen::Listen(std::ifstream &file) : AConfig("listen")
+cfg::Listen::Listen(std::ifstream &file) : AConfigPairStringString(file, "listen")
 {
-    if (file.peek() <= 0) 
+    init(file);
+}
+
+cfg::Listen::~Listen() {}
+
+void cfg::Listen::init(std::ifstream &file)
+{
+	if (file.peek() <= 0) 
 	{
         throw (std::runtime_error("Error: " + this->getType()));
 	}
@@ -14,35 +21,13 @@ cfg::Listen::Listen(std::ifstream &file) : AConfig("listen")
 	std::size_t sep = buffer.find(':');
 	if (sep != std::string::npos)
 	{
-		_listen.first = buffer.substr(0, sep);
-		_listen.second = buffer.substr(sep + 1);
+		_data.first = buffer.substr(0, sep);
+		_data.second = buffer.substr(sep + 1);
 	}
 	else
 	{
-		_listen.first = "0.0.0.0";
-		_listen.second = buffer;
+		_data.first = "0.0.0.0";
+		_data.second = buffer;
 	}
 	if (!found_semicolon) end_directive(file);
-}
-
-cfg::Listen::~Listen() {}
-
-std::string const & cfg::Listen::first() const
-{
-	return (_listen.first);
-}
-std::string const & cfg::Listen::second() const
-{
-	return (_listen.second);
-}
-
-std::pair<std::string, std::string> const & cfg::Listen::getListen() const
-{
-	return (_listen);
-}
-
-std::ostream & operator<<(std::ostream &o, cfg::Listen const &i)
-{
-	o << i.getType() << " " << i.first() << ":" << i.second() << ";" << std::endl;
-	return (o);
 }
