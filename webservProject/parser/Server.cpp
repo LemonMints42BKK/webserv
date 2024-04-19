@@ -83,7 +83,7 @@ void cfg::Server::setListen()
 	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
 		if ((listen=dynamic_cast<Listen*>(*it))) {
 			n++ ;
-			_listen.push_back(listen->getListen());
+			_listen.push_back(listen->getData());
 		}
 	}
 	if (!n) throw(std::runtime_error("validate listen on server"));

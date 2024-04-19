@@ -178,6 +178,16 @@ namespace cfg
 			std::vector<std::string> const &getIndex() const;
 			std::vector<std::string> const &getAllow() const;
 	};
+
+	class Types : public AGroup
+	{
+		private:
+			void init(std::ifstream &file);
+			void validate() const;
+		public:
+			Types(std::ifstream &file);
+			~Types();
+	};
 	
 	/* -------------------------- single config ---------------------------- */
 
@@ -275,26 +285,42 @@ namespace cfg
 			~Allow();
 	};
 
+	class Type : public AConfigVectorString
+	{
+		public:
+			Type(std::ifstream &file, std::string const &type);
+			~Type();
+	};
 
-	/* ---------------------------- etc ------------------------- */
-	class Listen : public AConfig
+
+	/* ------------------------- pair string string ----------------------- */
+
+	class AConfigPairStringString : public AConfig
+	{
+		protected:
+			std::pair<std::string, std::string> _data;
+			virtual void init(std::ifstream &file) = 0;
+		public:
+			AConfigPairStringString(std::ifstream &file, std::string const &type);
+			~AConfigPairStringString();
+			std::string const & first() const;
+			std::string const & second() const;
+			std::pair<std::string, std::string> const & getData() const;
+	};
+
+	class Listen : public AConfigPairStringString
 	{
 		private:
-			std::pair<std::string, std::string> _listen;
+			void init(std::ifstream &file);
 		public:
 			Listen(std::ifstream &file);
 			~Listen();
-			std::string const & first() const;
-			std::string const & second() const;
-			std::pair<std::string, std::string> const & getListen() const;
 	};
-
-	
 }
 
 std::ostream & operator<<(std::ostream &o, cfg::AConfigs const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigInt const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigVectorString const &i);
-std::ostream & operator<<(std::ostream &o, cfg::Listen const &i);
+std::ostream & operator<<(std::ostream &o, cfg::AConfigPairStringString const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigString const &i);
 #endif

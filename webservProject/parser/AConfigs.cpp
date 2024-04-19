@@ -89,12 +89,8 @@ std::ostream & operator<<(std::ostream &o, cfg::AConfigs const &i)
 {
 	cfg::config_itc it = i.begin();
 	cfg::config_itc it_in;
-	// cfg::Worker_processes *work;
 	cfg::AGroup *group;
-	// cfg::Http *http;
-	// cfg::Server *server;
-	// cfg::Index *index;
-	cfg::Listen *listen;
+	cfg::AConfigPairStringString *aConfigPairStringString;
 	cfg::AConfigString *aConfigString;
 	cfg::Location *location;
 	cfg::AConfigVectorString *aConfigVectorString;
@@ -116,8 +112,8 @@ std::ostream & operator<<(std::ostream &o, cfg::AConfigs const &i)
 		if ((aConfigVectorString = dynamic_cast<cfg::AConfigVectorString*>(*it)))
 			o << *aConfigVectorString << std::endl;
 
-		if ((listen = dynamic_cast<cfg::Listen*>(*it)))
-			o << *listen;
+		if ((aConfigPairStringString = dynamic_cast<cfg::AConfigPairStringString*>(*it)))
+			o << *aConfigPairStringString;
 
 		if ((aConfigString = dynamic_cast<cfg::AConfigString*>(*it)))
 			o << *aConfigString;
