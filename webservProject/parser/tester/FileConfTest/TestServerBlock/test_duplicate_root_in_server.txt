@@ -1,9 +1,11 @@
 
 
+
 http {
     server {
             server_name Hello;
-            error_page /404.html;
+            error_page Hello;
+            root /var/www/html;
             root /var/www/html;
             location /test {
 
@@ -11,12 +13,3 @@ http {
             listen 80;
     }
 }
-            
-    
-
-
-
-
-
-
-

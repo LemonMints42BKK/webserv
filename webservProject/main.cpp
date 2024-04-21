@@ -1,6 +1,15 @@
 
 #include "Configs.hpp"
 #include "Server.hpp"
+#include <signal.h>
+
+void sig_handler(int signo)
+{
+    if (signo == SIGINT)
+        std::cout << "SIGINT" << std::endl;
+    _exit(0);
+}
+
 int main(int argc, char **argv)
 {
     // try{
@@ -33,7 +42,9 @@ int main(int argc, char **argv)
 
         cfg::Configs configs(argv[1]);
 
-        Server server(&configs);
+        // cfg::Configs configs("network/default.conf");
+
+        server::Server server(&configs);
 
         server.start_server();
     }

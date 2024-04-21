@@ -26,7 +26,14 @@
 #include <string>
 #include <fstream>
 #include <sys/wait.h>
+#include <time.h>
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
 
+using namespace server;
 // this task should throw any error when unexpect
 // when socket ready to read the function call __start_http(int socket);
 
@@ -42,79 +49,12 @@ void print_fd_set(fd_set *set) {
     printf("\n");
 }
 
-void sigio_handler(int signum) {
-	static_cast<void>(signum);
-    printf("SIGIO received\n");
-    // Handle asynchronous I/O operation here
-}
-
 void Server::start_server()
 {
 	__getInputAndCreateListSocket();
 	__setUpMoniterSocket();
 	__runMoniter();
-}
-
-
-int Server::__createNewSocket(std::string ip ,std::string port)
-{
-            int rc,on=1;
-            
-            //Hotel Opens (Server Starts): You create a socket using socket().
-            int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-            if (sockfd < 0) {
-                perror("socket() failed");
-                exit(-1);
-            }
-
-            //Set up hotel for serve client this it set up for client use a seem door
-            rc = setsockopt(sockfd, SOL_SOCKET,  SO_REUSEADDR,
-                    (char *)&on, sizeof(on));   
-            if (rc < 0)
-            {
-                perror("setsockopt() failed");
-                close(sockfd);
-                exit(-1);
-            }
-            // Set socket for Nonblocking io
-			__setNonBlocking(sockfd);
-
-            // Set Up Rooms (Bind Socket): You inform the hotel staff (operating system) 
-            // about the hotel's address (IP address) and room 
-            // availability (port number) using bind().
-            struct addrinfo hints, *res;
-            memset(&hints, 0, sizeof(hints));
-            hints.ai_family = AF_INET;  // Request IPv4 addresses
-            hints.ai_socktype = SOCK_STREAM;  // Request TCP sockets
-
-            int status = getaddrinfo(ip.c_str(), port.c_str(), &hints, &res);
-            if (status != 0) {
-                fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-                close(sockfd);
-                return 1;
-            }
-
-            // Choose an address from the linked list (e.g., res->ai_addr)
-            struct sockaddr_in server_addr;
-            memcpy(&server_addr, res->ai_addr, res->ai_addrlen);  // Copy address info
-            freeaddrinfo(res);  // Free memory allocated by getaddrinfo
-
-            server_addr.sin_port = htons(std::atoi(port.c_str()));  // Convert port to network byte order
-            // Bind the socket to the address and port
-			std::cout << "Binding to " << ip << ":" << port << std::endl;
-            if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
-                perror("bind failed");
-                exit(1);
-            }
-            // Prepare Lobby (Listen): You use listen() to specify the maximum number of 
-            // guests (clients) who can wait in the lobby before new reservations are rejected.
-             // Listen for incoming connections
-            if (listen(sockfd, 5) == -1) {  // Backlog queue of size 5
-                perror("listen failed");
-                exit(1);
-            }
-            std::cout << "Server listening on " << ip << ":" << port << std::endl;
-            return sockfd;
+	__setCleanupSocket();
 }
 
 void Server::__getInputAndCreateListSocket(void)
@@ -125,7 +65,6 @@ void Server::__getInputAndCreateListSocket(void)
 		const std::string& key = it->first;
 		const std::vector<std::string>& value = it->second;
 		for (unsigned int i = 0; i < value.size(); ++i) {
-			std::cout << key << " " << value.at(i) << std::endl;
 			socketlist.push_back(__createNewSocket(key, value.at(i)));
 		}
 	}
@@ -143,23 +82,50 @@ void Server::__setUpMoniterSocket(void)
 
 void Server::__runMoniter(void)
 {
-	// struct timeval timeout = {0, 500000}; // 0.5 seconds
+	struct timeval timeout = {0, 5000000}; // 0.5 seconds
 	do
 	{
 		int rc;
-		print_fd_set(&_master_set);
+		// print_fd_set(&_master_set);
 		std::memcpy(&_working_set, &_master_set, sizeof(_master_set));
-		printf("  Waiting on select()...\n");
-		rc = select(_max_sd + 1, &_working_set, NULL, NULL,  NULL);
+		// printf("  Waiting on select()...\n");
+		rc = select(_max_sd + 1, &_working_set, NULL, NULL,  &timeout);
 		if (rc < 0)
 		{
 			perror("select() failed");
 			break;
 		}
+		if (rc == 0)
+		{
+			// printf("  select() timed out.  Check conn.\n");
+			__checkClientTimeOut();
+			timeout.tv_sec  = 5;
+   			timeout.tv_usec = 0;
+			continue;
+		}
 		__loopCheckFd_workingSet();
 	} while (_end_server == false);  
 }
 
+void Server::__checkClientTimeOut()
+{
+	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
+	{
+		if (FD_ISSET(i, &_master_set))
+		{
+			if (_time[i] + 3 < __getTime() && !__checkIsSocketListen(i))
+			{
+				_close_conn = true;
+				__handle_close_conn(i);
+			}
+		}
+	}
+}
+
+bool Server::__checkIsSocketListen(size_t &socket)
+{
+	return std::find(socketlist.begin(), socketlist.end(), socket) != socketlist.end();
+}
 
 void Server::__loopCheckFd_workingSet(void)
 {
@@ -167,10 +133,10 @@ void Server::__loopCheckFd_workingSet(void)
 	_close_conn = false;
 	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
 	{
-		bool is_socket_listen = std::find(socketlist.begin(), socketlist.end(), i) != socketlist.end();
+		// bool is_socket_listen = std::find(socketlist.begin(), socketlist.end(), i) != socketlist.end();
 		if (FD_ISSET(i, &_working_set))
 		{
-			if (is_socket_listen)
+			if (__checkIsSocketListen(i))
 				__requestFromClient(static_cast<int>(i)); // Accept new client
 			else
 			{
@@ -189,6 +155,7 @@ void Server::__handle_close_conn(size_t socketfd)
 		printf("Close fd : %lu\n", socketfd);
 		close(socketfd);
 		FD_CLR(socketfd, &_master_set);
+		// print_fd_set(&_master_set);
 		delete _http[socketfd];
 		if (socketfd == static_cast<size_t>(_max_sd))
 		{
@@ -198,13 +165,29 @@ void Server::__handle_close_conn(size_t socketfd)
 	}
 }
 
-void Server::__setCloseSocketFdListen(void)
+void Server::__CloseSocketFdListenInMasterSet(void)
 {
 	for (size_t i = 0; i < socketlist.size(); ++i)
 	{
 		close(socketlist[i]);
 		FD_CLR(socketlist[i], &_master_set);
 	}	
+}
+
+void Server::__setCleanupSocket(void)
+{
+	for (int i=0; i <= _max_sd; ++i)
+	{
+		if (FD_ISSET(i, &_master_set))
+		{
+			close(i);
+			FD_CLR(i, &_master_set);
+			if(_http[i] != NULL)
+				delete _http[i];
+		}
+	}
+	print_fd_set(&_master_set);
+	std::cout << "bye bye" << std::endl;
 }
 
 
@@ -224,16 +207,19 @@ void Server::__requestFromClient(int socket)
 	do
 	{
 		new_sd = accept(socket, NULL, NULL);
-		printf("  New incoming connection %d\n", new_sd);
 		if (new_sd < 0)
 			break;
 		__setNonBlocking(new_sd);
-		printf("  New incoming connection %d\n", new_sd);
+		std::cout << YELLOW << "New incoming connection " << new_sd << RESET <<std::endl;
+		// printf("New incoming connection %d\n", new_sd);
 		_http[new_sd] = new http::HttpV1(new_sd, _configs);
+		_time[new_sd] = __getTime();
+		// printf("Time In %.f\n", _time[new_sd]);
+		// printf("first client %lu\n", 3 + socketlist.size());
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;
-		printf("  New max_sd %d\n", _max_sd);
+		// printf("New max_sd %d\n", _max_sd);
 	} while (new_sd != -1);
 }
 
@@ -241,7 +227,17 @@ void Server::__setNonBlocking(int socket)
 {
 	int result = fcntl(socket, F_SETFL, O_NONBLOCK);
 	if (result == -1) {
-		perror("fcntl(F_SETFL)");
-		// Handle error
+		throw std::runtime_error("fcntl() failed");
 	}
+}
+
+double Server::__getTime()
+{
+	time_t timer;
+    struct tm y2k ;
+    y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
+    y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
+
+    time(&timer);  /* get current time; same as: timer = time(NULL)  */
+    return difftime(timer,mktime(&y2k));
 }

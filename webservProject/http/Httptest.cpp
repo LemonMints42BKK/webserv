@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <sstream>
-
+#include <ctime>
 http::Httptest::Httptest(int socket, cfg::Configs *configs) : Http(socket, configs)
 {
     (void) _configs;
@@ -17,6 +17,21 @@ http::Httptest::~Httptest()
     std::cout << "Httptest destructor called" << std::endl;
 }
 
+void http::Httptest::sendResponse()
+{
+    std::stringstream oss;
+	std::string message = "Hello this message sent from PTP";
+	oss << "HTTP/1.1 200 OK" << std::endl
+		<< "Server: PTP" << std::endl
+		<< "Content-Type: text/plan;" << std::endl
+		<< "Content-Length: " << message.length() << std::endl
+		<< std::endl
+		<< message
+		<< std::endl
+		<< std::endl;
+	send(_socket, oss.str().c_str(), oss.str().length(), 0);
+
+}
 bool http::Httptest::readSocket()
 {
     std::cout << "Httptest readSocker called" << std::endl;
@@ -42,8 +57,10 @@ bool http::Httptest::readSocket()
             }
             _data.write(buffer, rc);
             std::cout << "Http length total:" << _data.tellp() << std::endl;
+            sendResponse();
             // _http[_socket]->incrementTotalBytes(len);
             // _http[_socket]->sendResponse();
+            // sendResponse();
     }
     return false;
 }
