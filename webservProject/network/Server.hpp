@@ -14,6 +14,13 @@
 typedef std::map<std::string, std::vector<std::string> >::const_iterator Listen;
 typedef std::vector<std::string>::const_iterator Port;
 
+struct InfoSocket
+{
+	int socket;
+	std::string ip;
+	std::string port;
+};
+
 // this version is test on osi layer 4
 namespace server
 {
@@ -65,6 +72,7 @@ namespace server
 		
 		// Member method
 		void start_server(); // start_server.cpp
-	};
+		void stop_server(); // start_server.cpp
+	};	
 }
 #endif
