@@ -106,7 +106,7 @@ bool http::HttpV1::parserHeader()
 		if (!buffer.length() || buffer.c_str()[0] == '\r') {
 
 			// std::cout << "parserHeader: end" << std::endl;
-			std::cout << _request;
+			// std::cout << _request;
 			// check location root if not exist return 404
 			if (!tryFiles()) {
 				return _response.response(_socket, 404);

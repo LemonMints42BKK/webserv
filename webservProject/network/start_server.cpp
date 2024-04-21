@@ -27,6 +27,12 @@
 #include <fstream>
 #include <sys/wait.h>
 #include <time.h>
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+
 using namespace server;
 // this task should throw any error when unexpect
 // when socket ready to read the function call __start_http(int socket);
@@ -80,9 +86,9 @@ void Server::__runMoniter(void)
 	do
 	{
 		int rc;
-		print_fd_set(&_master_set);
+		// print_fd_set(&_master_set);
 		std::memcpy(&_working_set, &_master_set, sizeof(_master_set));
-		printf("  Waiting on select()...\n");
+		// printf("  Waiting on select()...\n");
 		rc = select(_max_sd + 1, &_working_set, NULL, NULL,  &timeout);
 		if (rc < 0)
 		{
@@ -91,7 +97,7 @@ void Server::__runMoniter(void)
 		}
 		if (rc == 0)
 		{
-			printf("  select() timed out.  Check conn.\n");
+			// printf("  select() timed out.  Check conn.\n");
 			__checkClientTimeOut();
 			timeout.tv_sec  = 5;
    			timeout.tv_usec = 0;
@@ -149,7 +155,7 @@ void Server::__handle_close_conn(size_t socketfd)
 		printf("Close fd : %lu\n", socketfd);
 		close(socketfd);
 		FD_CLR(socketfd, &_master_set);
-		print_fd_set(&_master_set);
+		// print_fd_set(&_master_set);
 		delete _http[socketfd];
 		if (socketfd == static_cast<size_t>(_max_sd))
 		{
@@ -204,15 +210,16 @@ void Server::__requestFromClient(int socket)
 		if (new_sd < 0)
 			break;
 		__setNonBlocking(new_sd);
-		printf("New incoming connection %d\n", new_sd);
-		_http[new_sd] = new http::Httptest(new_sd, _configs);
+		std::cout << YELLOW << "New incoming connection " << new_sd << RESET <<std::endl;
+		// printf("New incoming connection %d\n", new_sd);
+		_http[new_sd] = new http::HttpV1(new_sd, _configs);
 		_time[new_sd] = __getTime();
-		printf("Time In %.f\n", _time[new_sd]);
-		printf("first client %lu\n", 3 + socketlist.size());
+		// printf("Time In %.f\n", _time[new_sd]);
+		// printf("first client %lu\n", 3 + socketlist.size());
 		FD_SET(new_sd, &_master_set);
 		if (new_sd > _max_sd)
 			_max_sd = new_sd;
-		printf("New max_sd %d\n", _max_sd);
+		// printf("New max_sd %d\n", _max_sd);
 	} while (new_sd != -1);
 }
 

@@ -22,7 +22,7 @@ namespace server
 	private:
 		cfg::Configs *_configs;
 		double _time[FD_SETSIZE];
-		http::Httptest *_http[FD_SETSIZE];
+		http::Http *_http[FD_SETSIZE];
 
 		void __init_config(); // utils.cpp
 		fd_set _working_set;

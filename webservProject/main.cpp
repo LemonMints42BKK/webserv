@@ -1,9 +1,6 @@
 
 #include "Configs.hpp"
 #include "Server.hpp"
-<<<<<<< HEAD
-int main(int argc, char **argv)
-=======
 #include <signal.h>
 
 void sig_handler(int signo)
@@ -13,8 +10,7 @@ void sig_handler(int signo)
     _exit(0);
 }
 
-int main(void)
->>>>>>> 3cc197f (network)
+int main(int argc, char **argv)
 {
     // try{
     //     // std::ifstream file("default.conf");
@@ -46,7 +42,7 @@ int main(void)
 
         cfg::Configs configs(argv[1]);
 
-        cfg::Configs configs("network/default.conf");
+        // cfg::Configs configs("network/default.conf");
 
         server::Server server(&configs);
 

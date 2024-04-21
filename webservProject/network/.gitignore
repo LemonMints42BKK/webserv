@@ -6,3 +6,4 @@ output.txt
 client_normal
 test.c
 *.o
+libnetwork.a
