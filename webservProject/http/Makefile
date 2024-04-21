@@ -11,7 +11,8 @@ INCLUDES = -I$(PARSER_PATH)
 SRCS =	Http.cpp \
 		Httptest.cpp \
 		HttpV1.cpp \
-		Request.cpp
+		Request.cpp \
+		Response.cpp
 
 HEADERS = Http.hpp
 
@@ -29,7 +30,7 @@ clean:
 	rm -f $(OBJS)
 
 fclean: clean
-	rm $(NAME)
+	rm -f $(NAME)
 
 re: fclean all
 

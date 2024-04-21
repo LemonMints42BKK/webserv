@@ -86,14 +86,15 @@ namespace cfg
 			Configs(std::string const &filename);
 			~Configs();
 			std::string const & getRoot(std::string const &server_name, 
-				std::string const &location);
+				std::string const &location) const;
 			std::vector<std::string> const & getIndex(std::string const &server_name, 
-				std::string const &location);
+				std::string const &location) const;
 			std::vector<std::string> const & getAllow(std::string const &server_name, 
-				std::string const &location);
+				std::string const &location) const;
 			int const & getClientMaxBody(std::string const &server_name);
 			std::string const & getErrorPage(std::string const &server_name);
 			std::vector<std::pair<std::string, std::string> >  const & getListen(std::string server_name);
+			std::string const getTypes(std::string const &file) const;
 	};
 
 	class Http : public AGroup
@@ -105,9 +106,11 @@ namespace cfg
 			std::map<std::string, int> _client_max_body;
 			std::map<std::string, std::string > _error_page;
 			std::map<std::string, std::vector<std::pair<std::string, std::string> > > _listen;
+			std::map<std::string, std::vector<std::string> > _types;
 			void init(std::ifstream &file);
 			void validate() const;
 			void setServer();
+			void setTypes();
 		public:
 			Http(std::ifstream &file);
 			~Http();
@@ -120,6 +123,7 @@ namespace cfg
 			int const & getClientMaxBody(std::string const &server_name);
 			std::string const & getErrorPage(std::string const &server_name);
 			std::vector<std::pair<std::string, std::string> >  const & getListen(std::string server_name);
+			std::string const getTypes(std::string const &file) const;
 	};
 
 	class Server : public AGroup
@@ -323,4 +327,5 @@ std::ostream & operator<<(std::ostream &o, cfg::AConfigInt const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigVectorString const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigPairStringString const &i);
 std::ostream & operator<<(std::ostream &o, cfg::AConfigString const &i);
+
 #endif

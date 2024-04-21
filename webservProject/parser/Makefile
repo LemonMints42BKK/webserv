@@ -24,8 +24,8 @@ SRCS =	AConfig.cpp \
 		Error_page.cpp \
 		Location.cpp \
 		Allow.cpp \
-		types.cpp \
-		type.cpp
+		Types.cpp \
+		Type.cpp
 
 HEADERS = Configs.hpp
 
@@ -43,6 +43,6 @@ clean:
 	rm -f $(OBJS)
 
 fclean: clean
-	rm $(NAME)
+	rm -f $(NAME)
 
 re: fclean all

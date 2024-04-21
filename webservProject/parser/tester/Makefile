@@ -13,7 +13,7 @@ HEADERS = $(Include)Configs.hpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
-	./$(NAME) ../../Configs/default.conf
+	./$(NAME) ../../configs/default.conf
 
 $(OBJS): %.o: %.cpp $(HEADERS) Makefile ../*.cpp
 	$(CC) $(CFLAGS) -I$(Include) -c $< -o $@

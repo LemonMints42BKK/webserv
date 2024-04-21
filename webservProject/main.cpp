@@ -1,7 +1,7 @@
 
 #include "Configs.hpp"
 #include "Server.hpp"
-int main(void)
+int main(int argc, char **argv)
 {
     // try{
     //     // std::ifstream file("default.conf");
@@ -26,11 +26,12 @@ int main(void)
     // }
 
 
-    
+    if (argc != 2)
+        return (1);
 
     try {
 
-        cfg::Configs configs("configs/default.conf");
+        cfg::Configs configs(argv[1]);
 
         Server server(&configs);
 

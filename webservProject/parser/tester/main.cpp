@@ -42,9 +42,9 @@ int main(int argc, char **argv)
         cfg::Configs configs(argv[1]);
         configs.setGroupLevel(0, configs.begin(), configs.end());
         
-        std::cout << configs << std::endl;
+        // std::cout << configs << std::endl;
 
-        // test_server("localhost", "/", configs);
+        test_server("localhost:8080", "/", configs);
         // test_server("pnamnil", "/home", configs);
         // test_server("localhost", "/something", configs);
 
