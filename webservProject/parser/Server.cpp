@@ -105,14 +105,14 @@ void cfg::Server::setRoot()
 			n++ ;
 		}
 	}
-	if (n > 1) throw (std::runtime_error("validate root on server 1"));
+	if (n > 1) throw (std::runtime_error("duplicate root in server"));
 
 	if (n == 0) {
 		for (config_itc it = _configs.begin(); it != _configs.end(); it++) {
 			Location *location;
 			if ((location = dynamic_cast<cfg::Location*>(*it))) {
 				if(!location->getRoot().length())
-					throw (std::runtime_error("validate root on server 2"));
+					throw (std::runtime_error("validate server not have root"));
 			}
 		}
 	}

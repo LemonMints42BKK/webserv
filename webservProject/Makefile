@@ -24,6 +24,10 @@ SRCS = main.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
+NETWORK_SRCS = $(wildcard $(NETWORK_PATH)/*.cpp)
+PARSER_SRCS = $(wildcard $(PARSER_PATH)/*.cpp)
+HTTP_SRCS = $(wildcard $(HTTP_PATH)/*.cpp)
+
 all: $(NAME)
 
 m:

@@ -39,6 +39,9 @@ add_executable(
   ../Redirect.cpp 
   ../Error_page.cpp 
   ../Location.cpp
+  ../Allow.cpp
+  ../AConfigVectorString.cpp 
+  ../TestConfigMethod/GetRoot.cpp
   libparser.a
 )
 target_link_libraries(

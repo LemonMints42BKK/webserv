@@ -1,0 +1,7 @@
+.vscode
+*.o
+webserve
+libparser.a
+libhttp.a
+libnetwork.a
+a.out

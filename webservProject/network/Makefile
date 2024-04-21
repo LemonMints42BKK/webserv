@@ -11,7 +11,8 @@ CFLAGS = -Wall -Werror -Wextra -std=c++98
 
 SRCS = 	Server.cpp \
 		start_server.cpp \
-		utils.cpp 
+		utils.cpp \
+		createNewSocket.cpp
 #		start_http.cpp \
 
 HEADERS = Server.hpp

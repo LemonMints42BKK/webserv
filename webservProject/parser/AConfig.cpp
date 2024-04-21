@@ -10,6 +10,7 @@ cfg::AConfig::AConfig(AConfig const &ins)
     *this = ins;
 }
 
+
 cfg::AConfig & cfg::AConfig::operator=(AConfig const &rhs)
 {
     if (this != &rhs)

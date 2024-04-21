@@ -70,8 +70,9 @@ namespace http
 	{
 		public:
 			Httptest(int socket, cfg::Configs *configs);
-			~Httptest();
 			bool readSocket();
+			void sendResponse();
+			~Httptest();
 	};
 
 	class HttpV1 : public Http
