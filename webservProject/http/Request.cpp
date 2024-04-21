@@ -36,5 +36,24 @@ bool http::Request::setHeader(std::string const &key, std::string const &value)
 
 std::string const &http::Request::getHeader(std::string const &key)
 {
-	return _header[key];
+	return (_header[key]);
+}
+
+std::map<std::string, std::string>::iterator http::Request::headerBegin()
+{
+	return (_header.begin());
+}
+std::map<std::string, std::string>::iterator http::Request::headerEnd()
+{
+	return (_header.end());
+}
+
+std::ostream & operator<<(std::ostream &o, http::Request &i)
+{
+	o << i.getMethod() << " " << i.getLocation() << std::endl;
+	for (std::map<std::string, std::string>::iterator it = i.headerBegin();
+		it != i.headerEnd(); it++) {
+		o << it->first << ": " << it->second << std::endl;
+	}
+	return (o);
 }

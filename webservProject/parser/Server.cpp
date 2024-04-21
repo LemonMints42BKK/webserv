@@ -130,16 +130,17 @@ void cfg::Server::setLocation()
 		Location *location;
 		if((location = dynamic_cast<cfg::Location*>(*it))) {
 
-			if(_location.count((*location).getLocation()))
+			if(_location.count(location->getLocation()))
 				throw (std::runtime_error ("validate server duplicate location"));
 
-			if((*location).getRoot().length())
-				_location[(*location).getLocation()] = (*location).getRoot();
+			if(location->getRoot().length())
+				_location[location->getLocation()] = location->getRoot();
 			else
-				_location[(*location).getLocation()] = _root;
+				_location[location->getLocation()] = _root;
 			n++ ;
 		}
 	}
+	_location[""] = _root;
 	if(!n) throw (std::runtime_error ("validate server not have location"));
 }
 
@@ -204,10 +205,29 @@ void cfg::Server::setIndex()
 				_index[location->getLocation()] = server_index;
 		}
 	}
+
+	//debug
+	// for (std::map<std::string, std::vector<std::string> >::const_iterator it = _index.begin();
+	// it != _index.end(); it++) {
+	// 	for (std::vector<std::string>::const_iterator it1 = it->second.begin();
+	// 		it1 != it->second.end(); it1++) {
+	// 			std::cout << "server setIndex index: " << *it1 << std::endl;
+	// 	}
+
+	// }
 }
 
 std::map<std::string, std::vector<std::string> > const & cfg::Server::getIndex() const
 {
+	//debug
+	// for (std::map<std::string, std::vector<std::string> >::const_iterator it = _index.begin();
+	// it != _index.end(); it++) {
+	// 	for (std::vector<std::string>::const_iterator it1 = it->second.begin();
+	// 		it1 != it->second.end(); it1++) {
+	// 			std::cout << "server index: " << *it1 << std::endl;
+	// 	}
+
+	// }
 	return (_index);
 }
 
@@ -227,11 +247,12 @@ void cfg::Server::setAllow()
 	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
 		if((location = dynamic_cast<cfg::Location*>(*it))) {
 			if(location->getAllow().size())
-				_index[location->getLocation()] = location->getAllow();
+				_allow[location->getLocation()] = location->getAllow();
 			else
-				_index[location->getLocation()] = server_allow;
+				_allow[location->getLocation()] = server_allow;
 		}
 	}
+	_allow[""].push_back("GET");
 }
 
 std::map<std::string, std::vector<std::string> > const & cfg::Server::getAllow() const

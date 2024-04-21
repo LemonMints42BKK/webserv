@@ -48,19 +48,19 @@ void cfg::Configs::setHttp()
 		throw (std::runtime_error("validate Config no http or more http"));
 }
 
-std::string const & cfg::Configs::getRoot(std::string const &server_name, std::string const &location) 
+std::string const & cfg::Configs::getRoot(std::string const &server_name, std::string const &location) const
 {
 	return (_http->getRoot(server_name, location));
 }
 
 std::vector<std::string> const & cfg::Configs::getIndex(std::string const &server_name, 
-	std::string const &location)
+	std::string const &location) const
 {
 	return (_http->getIndex(server_name, location));
 }
 
 std::vector<std::string> const & cfg::Configs::getAllow(std::string const &server_name, 
-	std::string const &location)
+	std::string const &location) const
 {
 	return (_http->getAllow(server_name, location));
 }
@@ -78,6 +78,11 @@ std::string const & cfg::Configs::getErrorPage(std::string const &server_name)
 std::vector<std::pair<std::string, std::string> >  const &  cfg::Configs::getListen(std::string server_name)
 {
 	return (_http->getListen(server_name));
+}
+
+std::string const cfg::Configs::getTypes(std::string const &file) const
+{
+	return (_http->getTypes(file));
 }
 
 void cfg::Configs::validate() const

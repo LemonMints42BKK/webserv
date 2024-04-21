@@ -82,6 +82,11 @@ void cfg::Location::setIndex()
 			_index.insert(_index.end(), index->begin(), index->end());
 		}
 	}
+	// debug
+	// for (std::vector<std::string>::const_iterator it = _index.begin();
+	// it != _index.end(); it++) {
+	// 	std::cout << "location setIndex index: " << *it << std::endl;
+	// }
 }
 
 std::vector<std::string> const & cfg::Location::getIndex() const

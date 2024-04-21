@@ -26,6 +26,9 @@ OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
+m:
+	./$(NAME) configs/default.conf
+
 
 $(OBJS): %.o: %.cpp Makefile $(LIB_SRCS)
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
