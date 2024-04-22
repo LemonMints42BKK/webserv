@@ -16,6 +16,7 @@ cfg::Location::Location(std::ifstream &file) : AGroup(file, "location")
 	setRoot();
 	setIndex();
 	setAllow();
+	setCgi();
 	// validate();
 }
 
@@ -40,6 +41,10 @@ void cfg::Location::init(std::ifstream &file)
 				dir = new Redirect(file);
 			else if (directive == "allow")
 				dir = new Allow(file);
+			else if (directive == "cgi_file")
+				dir = new Cgi_file(file);
+			else if (directive == "cgi_exe")
+				dir = new Cgi_exe(file);
 			else
 				throw(std::runtime_error(this->getType() + "Error: unknow directive " + directive));
 
@@ -109,6 +114,44 @@ void cfg::Location::setAllow()
 
 std::vector<std::string> const &cfg::Location::getAllow() const{
 	return (_allow);
+}
+
+void cfg::Location::setCgi()
+{
+	Cgi_file *cgi_file;
+	Cgi_exe *cgi_exe;
+	std::size_t f = 0;
+	std::size_t e = 0;
+	_cgi = false;
+	for (config_itc it = _configs.begin(); it != _configs.end(); it++) {
+		if ((cgi_file = dynamic_cast<Cgi_file*>(*it))) {
+			_cgi_file = cgi_file->str();
+			f++;
+			if (f > 1) throw (std::runtime_error("validate cgi_file on location"));
+		}
+		if ((cgi_exe = dynamic_cast<Cgi_exe*>(*it))) {
+			_cgi_exe = cgi_exe->str();
+			e++;
+			if (e > 1) throw (std::runtime_error("validate cgi_file on location"));
+		}
+	}
+	if (f != e) throw (std::runtime_error("validate cgi_file on location"));
+	if (f) _cgi = true;
+}
+
+std::string const &cfg::Location::getCgiFile() const
+{
+	return (_cgi_file);
+}
+
+std::string const &cfg::Location::getCgiExe() const
+{
+	return (_cgi_exe);
+}
+
+bool cfg::Location::isCgi() const
+{
+	return (_cgi);
 }
 
 void cfg::Location::validate() const

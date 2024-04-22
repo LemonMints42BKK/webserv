@@ -17,6 +17,8 @@ namespace http
 		private:
 			std::string _method;
 			std::string _location;
+			std::string _cgi_file;
+			std::string _cgi_exe;
 			std::map<std::string, std::string> _header;
 		public:
 			Request();
@@ -30,6 +32,11 @@ namespace http
 
 			bool setHeader(std::string const &key, std::string const &value);
 			std::string const &getHeader(std::string const &key);
+
+			void setCgiFile(std::string const &cgi_file);
+			void setCgiExe(std::string const &cgi_Exe);
+			std::string const &getCgiFile() const;
+			std::string const &getCgiExe() const;
 
 			std::map<std::string, std::string>::iterator headerBegin();
 			std::map<std::string, std::string>::iterator headerEnd();
@@ -85,11 +92,14 @@ namespace http
 			bool parser();
 			bool parserFirstLine();
 			bool parserHeader();
+			bool router();
+			bool cgi();
 			bool tryFiles();
 			bool fileExists(const std::string& filename);
 			bool isDirectory(const std::string& filename);
 			bool isFile(const std::string& filename);
 			// bool errorPage(int status);
+
 
 		public:
 			HttpV1(int socket, cfg::Configs *configs);

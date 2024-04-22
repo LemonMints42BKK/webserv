@@ -3,12 +3,12 @@
 #include "Server.hpp"
 #include <signal.h>
 
-void sig_handler(int signo)
-{
-    if (signo == SIGINT)
-        std::cout << "SIGINT" << std::endl;
-    _exit(0);
-}
+// void sig_handler(int signo)
+// {
+//     if (signo == SIGINT)
+//         std::cout << "SIGINT" << std::endl;
+//     _exit(0);
+// }
 
 int main(int argc, char **argv)
 {
