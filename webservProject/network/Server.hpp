@@ -32,6 +32,7 @@ namespace server
 		http::Http *_http[FD_SETSIZE];
 
 		void __init_config(); // utils.cpp
+		//manage in select
 		fd_set _working_set;
 		int log_output;
 		fd_set _master_set;
@@ -40,7 +41,11 @@ namespace server
 		bool _end_server;
 		bool _close_conn;
 		std::vector<int> socketlist;
-		
+		//data socket
+		// std::pair<std::string, std::string> server;
+		// std::pair<std::string, std::string> client;
+
+
 		int	__createNewSocket(std::string ip ,std::string port); // createNewSocket.cpp
 		void __getNewSocketfd(int &sockfd); // createNewSocket.cpp
 		void __closeAllSocketlist(void); // createNewSocket.cpp

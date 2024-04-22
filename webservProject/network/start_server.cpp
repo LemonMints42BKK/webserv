@@ -238,7 +238,7 @@ void Server::__requestFromClient(int socket)
 		__setNonBlocking(new_sd);
 		std::cout << YELLOW << "New incoming connection " << new_sd << RESET <<std::endl;
 		// printf("New incoming connection %d\n", new_sd);
-		_http[new_sd] = new http::HttpV1(new_sd, _configs);
+		_http[new_sd] = new http::Httptest(new_sd, _configs);
 		_time[new_sd] = __getTime();
 		// printf("Time In %.f\n", _time[new_sd]);
 		// printf("first client %lu\n", 3 + socketlist.size());
