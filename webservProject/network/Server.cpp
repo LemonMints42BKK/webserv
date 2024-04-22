@@ -15,6 +15,5 @@ Server::Server(cfg::Configs *configs)
 {
 	_configs = configs;
 }
-
 // destructor
 Server::~Server(){}

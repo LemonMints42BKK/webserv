@@ -54,6 +54,10 @@ void Server::start_server()
 	__getInputAndCreateListSocket();
 	__setUpMoniterSocket();
 	__runMoniter();
+}
+
+void Server::stop_server()
+{
 	__setCleanupSocket();
 }
 
@@ -201,12 +205,34 @@ bool Server::__getCheckMaster_AllZero(void)
 	return true;
 }
 
+int InfoClient(int socketfd)
+{
+	int sockfd = socketfd;
+    struct sockaddr_in addr;
+    socklen_t addr_len = sizeof(addr);
+
+    // Assume sockfd is already initialized and connected
+
+    // Get the local address and port of the socket
+    if (getsockname(sockfd, (struct sockaddr *)&addr, &addr_len) == -1) {
+        perror("getsockname() failed");
+        return 1;
+    }
+
+    // Print the local address and port
+    char ip[INET_ADDRSTRLEN];
+    printf("Local IP: %s\n", inet_ntop(AF_INET, &addr.sin_addr, ip, INET_ADDRSTRLEN));
+    printf("Local Port: %d\n", ntohs(addr.sin_port));
+	return 0;
+
+}
 void Server::__requestFromClient(int socket)
 {
 	int new_sd;
 	do
 	{
 		new_sd = accept(socket, NULL, NULL);
+		// InfoClient(new_sd);
 		if (new_sd < 0)
 			break;
 		__setNonBlocking(new_sd);

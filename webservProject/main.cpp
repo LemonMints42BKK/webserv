@@ -3,12 +3,16 @@
 #include "Server.hpp"
 #include <signal.h>
 
-// void sig_handler(int signo)
-// {
-//     if (signo == SIGINT)
-//         std::cout << "SIGINT" << std::endl;
-//     _exit(0);
-// }
+
+server::Server *server_program ;
+
+void sig_handler(int signo)
+{
+    (void)signo;
+    server_program->stop_server();
+    delete server_program;
+    _exit(0);
+}
 
 int main(int argc, char **argv)
 {
@@ -34,19 +38,20 @@ int main(int argc, char **argv)
     //     std::cerr << e.what() << std::endl;
     // }
 
-
     if (argc != 2)
         return (1);
 
     try {
-
+        signal(SIGINT, sig_handler);
         cfg::Configs configs(argv[1]);
 
         // cfg::Configs configs("network/default.conf");
 
-        server::Server server(&configs);
+        //server::Server server(&configs);
 
-        server.start_server();
+        //server.start_server();
+        server_program = new server::Server(&configs);
+        server_program->start_server();
     }
     catch (std::exception const &e) {
         std::cerr << e.what() << std::endl;
