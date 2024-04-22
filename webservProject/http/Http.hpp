@@ -8,9 +8,10 @@
 namespace http
 {
 	#define HTTP_BUFFER 65000
-	#define METHOD 1
+	#define START_LINE 1
 	#define HEADER 2
 	#define BODY 3
+	#define RESPONSED 4
 
 	class Request
 	{
@@ -86,9 +87,8 @@ namespace http
 	{
 		private:
 			int _stage;
-			Request _request;
-			Response _response;
-			// bool endMessage(const char *buffer) const;
+			Request *_request;
+			Response *_response;
 			bool parser();
 			bool parserFirstLine();
 			bool parserHeader();
