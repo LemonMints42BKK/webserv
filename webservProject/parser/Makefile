@@ -25,7 +25,9 @@ SRCS =	AConfig.cpp \
 		Location.cpp \
 		Allow.cpp \
 		Types.cpp \
-		Type.cpp
+		Type.cpp \
+		Cgi_file.cpp \
+		Cgi_exe.cpp
 
 HEADERS = Configs.hpp
 

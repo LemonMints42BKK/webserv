@@ -32,6 +32,14 @@ void test_server(std::string const &server_name, std::string const &location, cf
     }
 }
 
+void test_getLocation(std::string const &server_name, std::string const &location, cfg::Configs &configs) {
+    cfg::Location *loc = configs.getLocation(server_name, location);
+    if (loc)
+        std::cout << "location: " << loc->getLocation() << std::endl;
+    else
+        std::cout << "location not found" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -42,12 +50,15 @@ int main(int argc, char **argv)
         cfg::Configs configs(argv[1]);
         configs.setGroupLevel(0, configs.begin(), configs.end());
         
-        // std::cout << configs << std::endl;
+        std::cout << configs << std::endl;
 
-        test_server("localhost:8080", "/", configs);
+        // test_server("localhost:8080", "/", configs);
         // test_server("pnamnil", "/home", configs);
         // test_server("localhost", "/something", configs);
 
+        test_getLocation("server", "location", configs);
+        test_getLocation("localhost:8080", "/cgi", configs);
+        test_getLocation("localhost", "/cgi", configs);
 
         // std::string index = configs.
 

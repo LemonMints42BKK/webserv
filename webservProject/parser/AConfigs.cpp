@@ -85,6 +85,29 @@ std::size_t cfg::AConfigs::count_root(config_itc begin, config_itc end) const
 	return (n);
 }
 
+cfg::Location *cfg::AConfigs::getLocation(std::string const &server_name, std::string const &location) const
+{
+	cfg::Http *http;
+	cfg::Server *server;
+	cfg::Location *locate;
+	for(config_itc c = _configs.begin(); c != _configs.end(); c++) {
+		if ((http = dynamic_cast<cfg::Http*>(*c))) {
+			for (config_itc h = http->_configs.begin(); h != http->_configs.end(); h++) {
+				if ((server = dynamic_cast<cfg::Server*>(*h))) {
+					if (server->getServerName() == server_name) {
+						for (config_itc s = server->_configs.begin(); s != server->_configs.end(); s++) {
+							if ((locate = dynamic_cast<cfg::Location*>(*s))) {
+								if (locate->getLocation() == location) return (locate);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return (NULL);
+}
+
 std::ostream & operator<<(std::ostream &o, cfg::AConfigs const &i)
 {
 	cfg::config_itc it = i.begin();
