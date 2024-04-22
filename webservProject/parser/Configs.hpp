@@ -16,6 +16,8 @@ namespace cfg
 {
 	typedef std::map<std::string, std::vector<std::string> > Listens;
 	typedef std::vector<std::pair<std::string, std::string> > ListenPairs;
+	class Http;
+	class Location;
 
 	class AConfig
 	{
@@ -60,6 +62,7 @@ namespace cfg
 
 			void setGroupLevel(int n, config_itc begin, config_itc end);
 			void getListen_getIp(Listens &listens, config_itc begin, config_itc end) const;
+			Location *getLocation(std::string const &server_name, std::string const &location) const;
 			// void getListen(Listens &listens, config_itc begin, config_itc end) const;
 			// void getListenPairs(ListenPairs &listens, config_itc begin, config_itc end) const;
 	};
@@ -74,7 +77,7 @@ namespace cfg
 			virtual ~AGroup();	
 	};
 
-	class Http;
+
 
 	class Configs : public AConfigs
 	{
@@ -167,6 +170,9 @@ namespace cfg
 		private:
 			std::string _location;
 			std::string _root;
+			bool _cgi;
+			std::string _cgi_file;
+			std::string _cgi_exe;
 			std::vector<std::string> _index;
 			std::vector<std::string> _allow;
 			void init(std::ifstream &file);
@@ -174,6 +180,7 @@ namespace cfg
 			void setRoot();
 			void setIndex();
 			void setAllow();
+			void setCgi();
 		public:
 			Location(std::ifstream &file);
 			~Location();
@@ -181,6 +188,9 @@ namespace cfg
 			std::string const &getRoot() const;
 			std::vector<std::string> const &getIndex() const;
 			std::vector<std::string> const &getAllow() const;
+			bool isCgi() const;
+			std::string const &getCgiFile() const;
+			std::string const &getCgiExe() const;
 	};
 
 	class Types : public AGroup
@@ -260,6 +270,20 @@ namespace cfg
 		public:
 			Error_page(std::ifstream &file);
 			~Error_page();
+	};
+
+	class Cgi_file : public AConfigString
+	{
+		public:
+			Cgi_file(std::ifstream &file);
+			~Cgi_file();
+	};
+
+	class Cgi_exe : public AConfigString
+	{
+		public:
+			Cgi_exe(std::ifstream &file);
+			~Cgi_exe();
 	};
 
 	/* ---------------------- vecter<string> -------------------- */

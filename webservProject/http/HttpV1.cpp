@@ -108,7 +108,7 @@ bool http::HttpV1::parserHeader()
 			// std::cout << "parserHeader: end" << std::endl;
 			// std::cout << _request;
 			// check location root if not exist return 404
-			if (!tryFiles()) {
+			if (!router()) {
 				return _response.response(_socket, 404);
 			}
 			
@@ -151,6 +151,27 @@ std::string http::HttpV1::trim(std::string &str) const
 	if (start == std::string::npos) return ("");
 	std::size_t end = str.find_last_not_of(" \t\n\r");
 	return str.substr(start, end - start + 1);
+}
+
+bool http::HttpV1::router()
+{
+	std::string location = _request.getLocation();
+	std::string host = _request.getHeader("Host");
+	cfg::Location *loc = _configs->getLocation(host, location);
+	if (!loc) 
+		return (tryFiles());
+	// else if (loc->getLocation() == "upload")
+	else if (loc->isCgi()) {
+		_request.setCgiFile(loc->getCgiFile());
+		_request.setCgiExe(loc->getCgiExe());
+		return (cgi());
+	}
+	else return false;
+}
+
+bool http::HttpV1::cgi()
+{
+	return (_response.response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
 }
 
 bool http::HttpV1::tryFiles()
