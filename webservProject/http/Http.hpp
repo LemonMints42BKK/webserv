@@ -75,11 +75,17 @@ namespace http
 
 	class Httptest : public Http
 	{
+		private:
+			Response _response;
 		public:
 			Httptest(int socket, cfg::Configs *configs);
 			bool readSocket();
 			void sendResponse();
 			~Httptest();
+
+			void cgi();
+			double getTime();
+			void readSocket_withCgi();
 	};
 
 	class HttpV1 : public Http
