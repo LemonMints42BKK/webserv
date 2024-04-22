@@ -9,7 +9,7 @@
 #include <algorithm>
 
 http::HttpV1::HttpV1(int socket, cfg::Configs *configs) 
-	: Http(socket, configs), _stage(METHOD){}
+	: Http(socket, configs), _stage(START_LINE){}
 
 http::HttpV1::~HttpV1(){}
 
@@ -37,56 +37,61 @@ bool http::HttpV1::readSocket()
 
 bool http::HttpV1::parser()
 {
-	// std::cout << "socket: "<< _socket << ", stage: " << _stage  <<std::endl;
 
-	if (_stage == METHOD) {
-		if (!parserFirstLine()) return (false);
+	if (_stage == START_LINE) {
+		_request = new Request;
+		_response = new Response;
+		if (!parserFirstLine()) {
+			delete _request;
+			delete _response;
+			_stage = START_LINE;
+			return (false);
+		} 
 	}
 
-	// std::cout << "socket: "<< _socket << ", stage: " << _stage  <<std::endl;
-
 	if (_stage == HEADER) {
-		if (!parserHeader()) return (false);
+		if (!parserHeader()) {
+			delete _request;
+			delete _response;
+			_stage = START_LINE;
+			return (false);
+		}
+	}
+
+	if (_stage == BODY) {
+
+	}
+
+	if (_stage == RESPONSED) {
+		delete _request;
+		delete _response;
+		_stage = START_LINE;
 	}
 
 	return (true);
 }
 
-// bool http::HttpV1::endMessage(const char *buffer) const
-// {
-// 	return (std::strstr(buffer, "\n\n") || std::strstr(buffer, "\r\n\r\n"));
-// }
-
 bool http::HttpV1::parserFirstLine()
 {
 	std::string buffer;
-	std::getline(_data, buffer);
-
-	// std::cout << "parserFirstLine: " << buffer << std::endl;
-	
+	std::getline(_data, buffer);	
 	std::istringstream line(buffer);
 
 	// check method
 	line >> buffer;
 	if (line.fail()) {
-		// response 400 bad request
-		std::cout << "parserFirstLine 1" << std::endl;
-		return (false);
-	}
-	// if (buffer != "GET" && buffer != "POST" && buffer != "DELETE" ) {
-	// 	// response 405 method not allow
-	// 	return (false);
-	// }
-	_request.setMethod(buffer);
+		_stage = RESPONSED;
+		return (_response->response(_socket, 400));
+	} 
+	_request->setMethod(buffer);
 
 	// check location
 	line >> buffer;
 	if (line.fail()) {
-		// response 400 bad request
-		std::cout << "parserFirstLine 2" << std::endl;
-		return (false);
-	}
-	_request.setLocation(buffer);
+		_stage = RESPONSED;
+		return (_response->response(_socket, 400));
+	} 
+	_request->setLocation(buffer);
 
 	_stage = HEADER;
 	return (true);
@@ -98,23 +103,18 @@ bool http::HttpV1::parserHeader()
 		std::string buffer;
 		std::getline(_data, buffer);
 
-		// std::cout << "parserHeader: buffer: " << buffer.length() << std::endl;
-		// if (buffer.length() == 1) {
-		// 	std::cout << "parserHeader: buffer: " << int(buffer.c_str()[0]) << std::endl;
-		// }
-
-		if (!buffer.length() || buffer.c_str()[0] == '\r') {
-
-			// std::cout << "parserHeader: end" << std::endl;
-			// std::cout << _request;
+		if (!buffer.length() || buffer.c_str()[0] == '\r') 
+		{
 			// check location root if not exist return 404
 			if (!router()) {
-				return _response.response(_socket, 404);
+				_stage = RESPONSED;
+				return _response->response(_socket, 404);
 			}
 			
 			//check if has content body
-			if (_request.getHeader("Content-Type").length()) {
+			if (_request->getHeader("Content-Type").length()) {
 				_stage = BODY;
+				break ;
 			}
 
 			// make response
@@ -124,60 +124,57 @@ bool http::HttpV1::parserHeader()
 		}
 		std::size_t colon = buffer.find(':');
 		if (colon == std::string::npos) {
-			// response 400 bad request
-			return (false);
+			_stage = RESPONSED;
+			return (_response->response(_socket, 400));
 		}
 		std::string key = buffer.substr(0, colon);
 		std::string value = buffer.substr(colon + 1);
 		if (!key.length() || !value.length()) {
-			// response 400 bad request
-			return (false);
+			_stage = RESPONSED;
+			return (_response->response(_socket, 400));
 		}
-		// std::cout << "parserHeader: " << key << " " << value << std::endl;
+
 		key = trim(key);
 		value = trim(value);
-		_request.setHeader(key, value);
+		_request->setHeader(key, value);
 
-		// std::cout << "parserHeader: " << key << " " << value << std::endl;
 	}
 	return (true);
 }
 
-
-
-std::string http::HttpV1::trim(std::string &str) const
-{
-	std::size_t start = str.find_first_not_of(" \t\n\r");
-	if (start == std::string::npos) return ("");
-	std::size_t end = str.find_last_not_of(" \t\n\r");
-	return str.substr(start, end - start + 1);
-}
-
 bool http::HttpV1::router()
 {
-	std::string location = _request.getLocation();
-	std::string host = _request.getHeader("Host");
+	std::string location = _request->getLocation();
+	std::string host = _request->getHeader("Host");
 	cfg::Location *loc = _configs->getLocation(host, location);
 	if (!loc) 
 		return (tryFiles());
-	// else if (loc->getLocation() == "upload")
 	else if (loc->isCgi()) {
-		_request.setCgiFile(loc->getCgiFile());
-		_request.setCgiExe(loc->getCgiExe());
+		_request->setCgiFile(loc->getCgiFile());
+		_request->setCgiExe(loc->getCgiExe());
 		return (cgi());
 	}
-	else return false;
+	else if (loc->getLocation() == "/upload") {
+		std::string buffer;
+		while (std::getline(_data, buffer)) {
+			std::cout << buffer << std::endl;
+		}
+		_stage = RESPONSED;
+		return _response->response(_socket, 201);
+	}
+	else return (tryFiles());
 }
 
 bool http::HttpV1::cgi()
 {
-	return (_response.response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
+	_stage = RESPONSED;
+	return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
 }
 
 bool http::HttpV1::tryFiles()
 {
-	std::string location = _request.getLocation();
-	std::string host = _request.getHeader("Host");
+	std::string location = _request->getLocation();
+	std::string host = _request->getHeader("Host");
 
 	std::string root = _configs->getRoot(host, location);
 	if (!root.length()) return (false);
@@ -210,23 +207,27 @@ bool http::HttpV1::tryFiles()
 
 		//check allow method
 		std::vector<std::string> methods = _configs->getAllow(host, location);
-		std::vector<std::string>::const_iterator it = std::find(methods.begin(), methods.end(), _request.getMethod());
-		if (it == methods.end())
-			return (_response.response(_socket, 405));
+		std::vector<std::string>::const_iterator it = std::find(methods.begin(), methods.end(), _request->getMethod());
+		if (it == methods.end()) {
+			_stage = RESPONSED;
+			return (_response->response(_socket, 405));
+		}
 	
 		//check type
 
 		std::string contentType = _configs->getTypes(file);
 
 		//response here
-
-		return _response.response(_socket, 200, file, contentType);
+		_stage = RESPONSED;
+		return _response->response(_socket, 200, file, contentType);
 
 		// return (true);
 	}
 
 	return (false);
 }
+
+/* utils */
 
 bool http::HttpV1::fileExists(const std::string& filename) {
     struct stat buffer;
@@ -247,4 +248,12 @@ bool http::HttpV1::isFile(const std::string& filename) {
         return S_ISREG(buffer.st_mode);
     }
     return false;
+}
+
+std::string http::HttpV1::trim(std::string &str) const
+{
+	std::size_t start = str.find_first_not_of(" \t\n\r");
+	if (start == std::string::npos) return ("");
+	std::size_t end = str.find_last_not_of(" \t\n\r");
+	return str.substr(start, end - start + 1);
 }
