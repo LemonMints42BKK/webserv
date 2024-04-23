@@ -28,7 +28,7 @@ namespace server
 	{
 	private:
 		cfg::Configs *_configs;
-		double _time[FD_SETSIZE];
+		time_t _time[FD_SETSIZE];
 		http::Http *_http[FD_SETSIZE];
 
 		void __init_config(); // utils.cpp
@@ -58,7 +58,7 @@ namespace server
 		void __runMoniter(void);// startserver.cpp
 		void __loopCheckFd_workingSet(void); //startserver.cpp
 		void __setNonBlocking(int socket); // startserver.cpp
-		double  __getTime(); // startserver.cpp
+		time_t  __getTime(); // startserver.cpp
 		bool __checkIsSocketListen(size_t &socket); // startserver.cpp
 
 

@@ -2,6 +2,9 @@
 
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
+#include <signal.h>
+
 
 #include <iostream>
 #include <sstream>
@@ -71,8 +74,7 @@ bool http::Httptest::readSocket()
 double http::Httptest::getTime()
 {
     time_t timer;
-    struct tm y2k = {0};
-    double seconds;
+    struct tm y2k ;
 
     y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
     y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
@@ -92,7 +94,7 @@ void http::Httptest::cgi()
             // Child process code (e.g., sleep for some time)
             
             sleep(1);
-            exit(0);
+            _exit(0);
         } 
         else 
         {

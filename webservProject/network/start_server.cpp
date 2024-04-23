@@ -51,6 +51,7 @@ void print_fd_set(fd_set *set) {
 
 void Server::start_server()
 {
+	__init_config();
 	__getInputAndCreateListSocket();
 	__setUpMoniterSocket();
 	__runMoniter();
@@ -78,6 +79,7 @@ void Server::__setUpMoniterSocket(void)
 {
 	// std::cout << "Set Up Moniter Socket" << std::endl;
 	FD_ZERO(&_master_set);
+	FD_ZERO(&_working_set);
 	for (size_t i = 0; i < socketlist.size(); ++i) {
 		FD_SET(socketlist[i], &_master_set);
 	}
@@ -86,10 +88,14 @@ void Server::__setUpMoniterSocket(void)
 
 void Server::__runMoniter(void)
 {
-	struct timeval timeout = {0, 5000000}; // 0.5 seconds
-	do
+	struct timeval timeout;
+	std::memset(&timeout, 0, sizeof(timeout));
+	timeout.tv_sec  = 5;
+	timeout.tv_usec = 0;
+	int rc ;
+	while(true)
 	{
-		int rc;
+		// struct timeval timeout = {0, 5000000}; // 0.5 seconds
 		// print_fd_set(&_master_set);
 		std::memcpy(&_working_set, &_master_set, sizeof(_master_set));
 		// printf("  Waiting on select()...\n");
@@ -101,14 +107,16 @@ void Server::__runMoniter(void)
 		}
 		if (rc == 0)
 		{
-			// printf("  select() timed out.  Check conn.\n");
+			printf("  select() timed out.  Check conn.\n");
 			__checkClientTimeOut();
+				// std::memset(&timeout, 0, sizeof(timeout));
+			std::memset(&_working_set, 0, sizeof(_working_set));
 			timeout.tv_sec  = 5;
-   			timeout.tv_usec = 0;
+			timeout.tv_usec = 0;
 			continue;
 		}
 		__loopCheckFd_workingSet();
-	} while (_end_server == false);  
+	} 
 }
 
 void Server::__checkClientTimeOut()
@@ -117,8 +125,10 @@ void Server::__checkClientTimeOut()
 	{
 		if (FD_ISSET(i, &_master_set))
 		{
-			if (_time[i] + 3 < __getTime() && !__checkIsSocketListen(i))
+			// std::cout << "Time " << _time[i] << std::endl;
+			if (!__checkIsSocketListen(i) && _time[i] + 3 < __getTime() )
 			{
+				std::cout << RED << "Time out " << i << RESET << std::endl;
 				_close_conn = true;
 				__handle_close_conn(i);
 			}
@@ -186,6 +196,8 @@ void Server::__setCleanupSocket(void)
 		{
 			close(i);
 			FD_CLR(i, &_master_set);
+			// printf("%p\n", _http[i]);
+			// printf("%d\n", _http[i] != NULL);
 			if(_http[i] != NULL)
 				delete _http[i];
 		}
@@ -257,13 +269,11 @@ void Server::__setNonBlocking(int socket)
 	}
 }
 
-double Server::__getTime()
+time_t Server::__getTime()
 {
 	time_t timer;
     struct tm y2k ;
     y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
     y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
-
-    time(&timer);  /* get current time; same as: timer = time(NULL)  */
-    return difftime(timer,mktime(&y2k));
+    return time(&timer);
 }
