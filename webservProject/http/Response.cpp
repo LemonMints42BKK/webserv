@@ -42,7 +42,7 @@ bool http::Response::response(int socket, int status, std::string const &filenam
 	_header["Content-Type"] = content_type;
 	_header["Content-Length"] = ss.str();
 	_header["Connection"] = "keep-alive";
-	_header["Keep-Alive"] = "timeout= 5, max=20";
+	// _header["Keep-Alive"] = "timeout=5, max=20";
 	file.seekg(0);
 
 	ss.str("");

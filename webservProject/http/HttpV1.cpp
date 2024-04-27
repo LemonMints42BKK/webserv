@@ -11,7 +11,11 @@
 http::HttpV1::HttpV1(int socket, cfg::Configs *configs) 
 	: Http(socket, configs), _stage(START_LINE){}
 
-http::HttpV1::~HttpV1(){}
+http::HttpV1::~HttpV1()
+{
+	if (_request) delete _request;
+	if (_response) delete _response;
+}
 
 /* return true to close socket */
 bool http::HttpV1::readSocket()
@@ -43,7 +47,9 @@ bool http::HttpV1::parser()
 		_response = new Response;
 		if (!parserFirstLine()) {
 			delete _request;
+			_request = 0;
 			delete _response;
+			_response = 0;
 			_stage = START_LINE;
 			return (false);
 		} 
@@ -52,7 +58,9 @@ bool http::HttpV1::parser()
 	if (_stage == HEADER) {
 		if (!parserHeader()) {
 			delete _request;
+			_request = 0;
 			delete _response;
+			_response = 0;
 			_stage = START_LINE;
 			return (false);
 		}
@@ -64,7 +72,9 @@ bool http::HttpV1::parser()
 
 	if (_stage == RESPONSED) {
 		delete _request;
+		_request = 0;
 		delete _response;
+		_response = 0;
 		_stage = START_LINE;
 	}
 
