@@ -64,7 +64,7 @@ namespace cfg
 			void getListen_getIp(Listens &listens, config_itc begin, config_itc end) const;
 			Location *getLocation(std::string const &server_name, std::string const &location) const;
 			// void getListen(Listens &listens, config_itc begin, config_itc end) const;
-			// void getListenPairs(ListenPairs &listens, config_itc begin, config_itc end) const;
+			void getListenPairs(ListenPairs &listens, config_itc begin, config_itc end) const;
 	};
 
 	class AGroup : public AConfigs
