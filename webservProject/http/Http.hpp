@@ -61,6 +61,26 @@ namespace http
 			// void setHeader(std::string, std::string);
 
 	};
+
+	class ResponseV2
+	{
+		private:
+			std::string _status_line;
+			std::string _content;
+			void setStatusLine(int status);
+			std::map<int, std::string> _status;
+			std::map<std::string, std::string> _header;
+			std::stringstream _response; 
+		public:
+			ResponseV2();
+			~ResponseV2();
+			bool response(int socket, int status, std::string const &filename, 
+				std::string const &content_type);
+			bool response(int socket, int status);
+			void setContent(std::string const &file);
+			// void setHeader(std::string, std::string);
+			bool writeSocket(int socket);
+	};
 	
 	class Http
 	{
@@ -105,6 +125,32 @@ namespace http
 			HttpV1(int socket, cfg::Configs *configs);
 			~HttpV1();
 			bool readSocket();
+			std::string trim(std::string &string) const;
+	};
+
+	class HttpV2 : public Http
+	{
+		private:
+			int _stage;
+			Request *_request;
+			ResponseV2 *_response;
+			bool parser();
+			bool parserFirstLine();
+			bool parserHeader();
+			bool router();
+			bool cgi();
+			bool tryFiles();
+			bool fileExists(const std::string& filename);
+			bool isDirectory(const std::string& filename);
+			bool isFile(const std::string& filename);
+			// bool errorPage(int status);
+
+
+		public:
+			HttpV2(int socket, cfg::Configs *configs);
+			~HttpV2();
+			bool readSocket();
+			bool writeSocket();
 			std::string trim(std::string &string) const;
 	};
 }

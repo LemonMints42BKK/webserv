@@ -21,7 +21,7 @@
 #include <algorithm>
 
 #define MAX_EVENTS 10
-#define MYHTTP http::HttpV1 
+#define MYHTTP http::HttpV2
 
 namespace server
 {

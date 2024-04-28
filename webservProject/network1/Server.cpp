@@ -21,17 +21,15 @@ void server::Server::start_server()
 		/* Get the socket server fd */
 		int server_socket = __create_tcp_server_socket(it->first, it->second);
 		if (server_socket == -1) {
-			// close_all_server_sockets();
 			throw std::runtime_error("failed on create_tcp_server_socket");
 		}
 
 		/* Make the socket non blocking, will not wait for connection indefinitely */ 
-		fcntl(server_socket, F_SETFL, O_NONBLOCK);
-		if (server_socket == -1) {
-			close (server_socket);
-			// close_all_server_sockets();
-			throw std::runtime_error("failed on create_tcp_server_socket make non blocking");
-		}
+		// fcntl(server_socket, F_SETFL, O_NONBLOCK);
+		// if (server_socket == -1) {
+		// 	close (server_socket);
+		// 	throw std::runtime_error("failed on create_tcp_server_socket make non blocking");
+		// }
 
 		_server_sockets.push_back(server_socket);
 		std::cout << "listen on socket: " << server_socket << std::endl;
@@ -45,17 +43,18 @@ void server::Server::start_server()
 	if (_epoll_fd == -1) {
 		throw std::runtime_error ("epoll_create");
 	}
-	_server_sockets.push_back(_epoll_fd);
+
+	// _server_sockets.push_back(_epoll_fd);
 	
-	for (std::size_t i = 0; i < _server_sockets.size() - 1; i++) {
+	for (std::vector<int>::const_iterator it = _server_sockets.begin(); it < _server_sockets.end(); it++) {
 		
-		_ev.data.fd = _server_sockets[i];
+		_ev.data.fd = *it;
 
 		/* Interested in read's events using edge triggered mode */
 		_ev.events = EPOLLIN | EPOLLET ;
 
 		/* Allow epoll to monitor the server_fd socket */
-		if (epoll_ctl (_epoll_fd, EPOLL_CTL_ADD, _server_sockets[i], &_ev) == -1) {
+		if (epoll_ctl (_epoll_fd, EPOLL_CTL_ADD, *it, &_ev) == -1) {
 			throw std::runtime_error ("epoll_ctl");
 		}
 	}
@@ -63,6 +62,9 @@ void server::Server::start_server()
 	while (1) {
 		/* Returns only sockets for which there are events */
 		int nfds = epoll_wait(_epoll_fd, _events, MAX_EVENTS, -1);
+
+		// debug
+		std::cout << "event come in: " << nfds << std::endl;
 
 		if (nfds == -1) {
 			perror("epoll_wait");
@@ -72,30 +74,80 @@ void server::Server::start_server()
 		/* Iterate over sockets only having events */
 		for (int i = 0; i < nfds; i++) {
 			int fd = _events[i].data.fd;
+
+			//debug
+			std::cout << "fd: " << fd << ", event: " << _events[i].events << std::endl;
 			
 			// std:: cout << "debug: " << events[i].events << std::endl;
+			// if (fd < 3) continue;
 
 			if (std::find(_server_sockets.begin(), _server_sockets.end(), fd) != _server_sockets.end()) {
 				/* New connection request received */
 				__accept_new_connection_request(fd);
 			}
 			
-			else 
-			{
-				if ((_events[i].events & EPOLLERR) || (_events[i].events & EPOLLRDHUP)) {
+			else if (_events[i].events & EPOLLERR) {
 
-				/* Client connection closed */
-					std::cout << "Close by socket: " << fd << std::endl;
-					delete _http[_events[i].data.fd];
-					_http.erase(_events[i].data.fd);
-					close(fd);
+			/* Client connection closed */
+				std::cout << "Close by socket: " << fd << std::endl;
+				delete _http[fd];
+				_http.erase(fd);
+				close(fd);
+			}
+
+			else if (_events[i].events & EPOLLIN) {
+				/* Received data on an existing client socket */
+				std::cout << "Connect by socket: " << fd << " EPOLLIN" << std::endl;
+				// recv_and_forward_message(fd);
+				// _http[fd]->readSocket();
+
+				// recv_and_forward_message(fd);
+
+				// _http[fd]->readSocket();
+
+				while(!_http[fd]->readSocket()){
+
+
 				}
-				else if (_events[i].events & EPOLLIN) {
-					/* Received data on an existing client socket */
-					std::cout << "Connect by socket: " << fd << std::endl;
-					// recv_and_forward_message(fd);
-					_http[_events[i].data.fd]->readSocket();
+								//debug
+				std::cout << "read success set EPOLLOUT" << std::endl;
+
+				struct epoll_event ev;
+				ev.events = EPOLLOUT | EPOLLET;
+				ev.data.fd = _events[i].data.fd;
+				if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, ev.data.fd, &ev) == -1) {
+					close(ev.data.fd);
+					perror("epoll_ctl EPOLL_CTL_MOD: conn_sock");
+					return;
 				}
+				
+			}
+
+			else if (_events[i].events & EPOLLOUT) {
+
+				int fd = _events[i].data.fd;
+				/* Received data on an existing client socket */
+				std::cout << "Connect by socket: " << fd << " EPOLLOUT" << std::endl;
+				// recv_and_forward_message(fd);
+				_http[fd]->writeSocket();
+				
+				// mod to EPOLLIN
+				//debug
+				// std::cout << "read success set EPOLLIN" << std::endl;
+
+				// struct epoll_event ev;
+				// ev.events = EPOLLIN | EPOLLET;
+				// ev.data.fd = _events[i].data.fd;
+				// if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, ev.data.fd, &ev) == -1) {
+				// 	close(ev.data.fd);
+				// 	perror("epoll_ctl EPOLL_CTL_MOD: conn_sock");
+				// 	return;
+				// }
+
+				// close socket
+				
+				epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+				close (fd);
 			}
 		}
 	}
@@ -105,7 +157,7 @@ void server::Server::__accept_new_connection_request(int fd) {
     struct sockaddr_in new_addr;
     int addrlen = sizeof(struct sockaddr_in);
 
-    while (1) {
+    // while (1) {
         /* Accept new connections */
         int conn_sock = accept(fd, (struct sockaddr*)&new_addr, 
                           (socklen_t*)&addrlen);
@@ -113,30 +165,31 @@ void server::Server::__accept_new_connection_request(int fd) {
         if (conn_sock == -1) {
             /* We have processed all incoming connections. */
             if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-                break;
+                return;
             }
             else {
                 perror ("accept");
-                break;
+                return;
             }
         }
 
         /* Make the new connection non blocking */
-        fcntl(conn_sock, F_SETFL, O_NONBLOCK);
+        // fcntl(conn_sock, F_SETFL, O_NONBLOCK);
 
         /* Monitor new connection for read events in edge triggered mode */
-        _ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+        _ev.events = EPOLLIN | EPOLLET;
         _ev.data.fd = conn_sock;
 
         /* Allow epoll to monitor new connection */
         if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, conn_sock, &_ev) == -1) {
+			close(conn_sock);
             perror("epoll_ctl: conn_sock");
-            break;
+            return;
         }
 
 		/* Create Http */
 		_http[conn_sock] = new MYHTTP(conn_sock, _configs);
-    }
+    // }
 }
 
 void server::Server::stop_server()
