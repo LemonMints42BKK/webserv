@@ -11,8 +11,10 @@ INCLUDES = -I$(PARSER_PATH)
 SRCS =	Http.cpp \
 		Httptest.cpp \
 		HttpV1.cpp \
+		HttpV2.cpp \
 		Request.cpp \
-		Response.cpp
+		Response.cpp \
+		ResponseV2.cpp
 
 HEADERS = Http.hpp
 
