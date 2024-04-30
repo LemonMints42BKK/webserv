@@ -4,57 +4,95 @@
 #include <cstring>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 
 #include <iostream>
 #include <algorithm>
 
-http::HttpV1::HttpV1(int socket, cfg::Configs *configs) 
+http::HttpV2::HttpV2(int socket, cfg::Configs *configs) 
 	: Http(socket, configs), _stage(START_LINE), _request(NULL), _response(NULL)
 {}
 
-http::HttpV1::~HttpV1()
+http::HttpV2::~HttpV2()
 {
 	if (_request) delete _request;
 	if (_response) delete _response;
 }
 
 /* return true to close socket */
-bool http::HttpV1::readSocket()
+bool http::HttpV2::readSocket()
 {
 	char buffer[HTTP_BUFFER];
 	int byte_read;
 
 	while (true) {
+		// byte_read = read(_socket, buffer, HTTP_BUFFER - 1);
 		// byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, 0);
 		byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, MSG_DONTWAIT);
 		if (byte_read < 0) return (false);
-		if (byte_read == 0) return (true);
+		if (byte_read == 0) {
+			return (true);
+		}
 
 		buffer[byte_read] = 0;
 		_data.write(buffer, byte_read);
 		
-		// std::cout << "debug from http byte_read: " << byte_read << std::endl; 
 		// debug
+		// std::cout << "debug from http byte_read: " << byte_read << std::endl; 
 		// std::cout << _data.str() << std::endl;
-
 		if(!parser()) return (false);
 	}
 
 	return (false);
 }
 
-bool http::HttpV1::writeSocket()
+// bool http::HttpV2::readSocket()
+// {
+// 	char buffer[HTTP_BUFFER];
+// 	int byte_read;
+
+// 	do {
+// 		// byte_read = read(_socket, buffer, HTTP_BUFFER - 1);
+// 		// byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, 0);
+// 		byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, MSG_DONTWAIT);
+
+// 		if (byte_read == 0) {
+// 			std::cout << "byte_read: 0" << std::endl;
+// 			std::cout << _data.str() << std::endl;
+// 			parser();
+// 			return (true);
+// 		}
+
+// 		//debug
+// 		if (errno == EWOULDBLOCK || errno == EAGAIN) {
+// 			// std::cout << "byte_read: " << byte_read << ", EWOULDBLOCK" << std::endl;
+// 			continue;
+// 		}
+
+// 		// if (byte_read < 0) return (false);
+// 		// buffer[byte_read] = 0;
+// 		_data.write(buffer, byte_read);
+// 	} while (byte_read > 0);
+
+// 	std::cout << "out loop byte_read: " << byte_read << std::endl;
+// 	return (false);
+// }
+
+bool http::HttpV2::writeSocket()
 {
-	return (true);
+	_stage = RESPONSED;
+	//debug 
+	// std::cout << "http write socket: " << _socket << std::endl;
+	// perror("Error: ");
+
+	return (_response->writeSocket(_socket));
 }
 
-bool http::HttpV1::parser()
+bool http::HttpV2::parser()
 {
 
 	if (_stage == START_LINE) {
 		_request = new Request;
-		_response = new Response;
+		_response = new ResponseV2;
 		if (!parserFirstLine()) {
 			delete _request;
 			_request = NULL;
@@ -65,7 +103,7 @@ bool http::HttpV1::parser()
 		}
 
 		// debug 
-		std::cout << _request->getMethod() << " " << _request->getLocation() << std::endl;
+		// std::cout << _request->getMethod() << " " << _request->getLocation() << std::endl;
 	}
 
 	if (_stage == HEADER) {
@@ -94,7 +132,7 @@ bool http::HttpV1::parser()
 	return (true);
 }
 
-bool http::HttpV1::parserFirstLine()
+bool http::HttpV2::parserFirstLine()
 {
 	std::string buffer;
 	std::getline(_data, buffer);	
@@ -103,7 +141,6 @@ bool http::HttpV1::parserFirstLine()
 	// check method
 	line >> buffer;
 	if (line.fail()) {
-		_stage = RESPONSED;
 		return (_response->response(_socket, 400));
 	} 
 	_request->setMethod(buffer);
@@ -111,7 +148,6 @@ bool http::HttpV1::parserFirstLine()
 	// check location
 	line >> buffer;
 	if (line.fail()) {
-		_stage = RESPONSED;
 		return (_response->response(_socket, 400));
 	} 
 	_request->setLocation(buffer);
@@ -120,7 +156,7 @@ bool http::HttpV1::parserFirstLine()
 	return (true);
 }
 
-bool http::HttpV1::parserHeader()
+bool http::HttpV2::parserHeader()
 {
 	while (true) {
 		std::string buffer;
@@ -130,7 +166,6 @@ bool http::HttpV1::parserHeader()
 		{
 			// check location root if not exist return 404
 			if (!router()) {
-				_stage = RESPONSED;
 				return _response->response(_socket, 404);
 			}
 			
@@ -147,13 +182,11 @@ bool http::HttpV1::parserHeader()
 		}
 		std::size_t colon = buffer.find(':');
 		if (colon == std::string::npos) {
-			_stage = RESPONSED;
 			return (_response->response(_socket, 400));
 		}
 		std::string key = buffer.substr(0, colon);
 		std::string value = buffer.substr(colon + 1);
 		if (!key.length() || !value.length()) {
-			_stage = RESPONSED;
 			return (_response->response(_socket, 400));
 		}
 
@@ -165,7 +198,7 @@ bool http::HttpV1::parserHeader()
 	return (true);
 }
 
-bool http::HttpV1::router()
+bool http::HttpV2::router()
 {
 	std::string location = _request->getLocation();
 	std::string host = _request->getHeader("Host");
@@ -182,89 +215,17 @@ bool http::HttpV1::router()
 		while (std::getline(_data, buffer)) {
 			std::cout << buffer << std::endl;
 		}
-		_stage = RESPONSED;
 		return _response->response(_socket, 201);
 	}
 	else return (tryFiles());
 }
 
-time_t http::HttpV1::getTime()
+bool http::HttpV2::cgi()
 {
-	time_t timer;
-    return time(&timer);
+	return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
 }
 
-pid_t http::HttpV1::wait_Child(pid_t child_pid, int *status)
-{
-    pid_t exited_pid;
-    time_t start_time = getTime();
-    time_t post_time = start_time + 3;
-    while ((exited_pid = waitpid(child_pid, status, WNOHANG)) == 0) {
-      printf("Child process (pid: %d) hasn't exited yet...\n", child_pid);
-      start_time = getTime();      
-      if (post_time - start_time == 0)
-        kill(child_pid, SIGKILL);
-      sleep(1); // Check again after 1 second
-    }
-    return exited_pid;
-}
-
-void http::HttpV1::getExiteAndStatusForResponse(pid_t exited_pid, int status)
-{
-	if(exited_pid < 0) {
-		std::cout << "CGI: failed" << std::endl;
-		_stage = RESPONSED;
-		_response->response(_socket, 500);
-	}
-
-	if (WIFEXITED(status)) {
-		int exit_status = WEXITSTATUS(status);
-		if (exit_status == 0) {
-			std::cout << "CGI: success" << std::endl;
-			_stage = RESPONSED;
-			_response->response(_socket, 200, "./www/cgi.html", "text/html");
-		} else {
-			_stage = RESPONSED;
-			std::cout << "CGI: failed" << std::endl;
-			_response->response(_socket, 500);
-		}
-	} else {
-		std::cout << "CGI: failed" << std::endl;
-		_stage = RESPONSED;
-		_response->response(_socket, 500);
-	}
-}
-
-bool http::HttpV1::cgi()
-{
-	_stage = RESPONSED;
-	pid_t pid = fork();
-	if(pid == 0)
-	{
-		pid_t child_pid = fork();
-		if (child_pid == 0) {
-			char *envp[] = {NULL};
-			// char *argv[3] = {"/usr/bin/python3", "./CgiFile/GenPage.py", NULL};
-			char *argv[3];
-			argv[0] = strdup("/usr/bin/python3");
-			argv[1] = strdup("http/CgiFile/GenPage.py");
-			argv[2] = NULL;
-			if(execve(argv[0], argv, envp) == -1)
-				exit(1);
-			exit(0);
-		} else {
-			// Parent process
-			int status;
-			pid_t exited_pid = wait_Child(child_pid, &status);
-			getExiteAndStatusForResponse(exited_pid, status);
-		}
-		exit(0);
-	}	
-	return (true);
-	// return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
-}
-
-bool http::HttpV1::tryFiles()
+bool http::HttpV2::tryFiles()
 {
 	std::string location = _request->getLocation();
 	std::string host = _request->getHeader("Host");
@@ -274,7 +235,6 @@ bool http::HttpV1::tryFiles()
 		root = _configs->getRoot(host, location);
 	}
 	catch (std::exception const &e){
-		_stage = RESPONSED;
 		return (_response->response(_socket, 502));
 	}
 
@@ -310,7 +270,6 @@ bool http::HttpV1::tryFiles()
 		std::vector<std::string> methods = _configs->getAllow(host, location);
 		std::vector<std::string>::const_iterator it = std::find(methods.begin(), methods.end(), _request->getMethod());
 		if (it == methods.end()) {
-			_stage = RESPONSED;
 			return (_response->response(_socket, 405));
 		}
 	
@@ -319,7 +278,6 @@ bool http::HttpV1::tryFiles()
 		std::string contentType = _configs->getTypes(file);
 
 		//response here
-		_stage = RESPONSED;
 		return _response->response(_socket, 200, file, contentType);
 
 		// return (true);
@@ -330,12 +288,12 @@ bool http::HttpV1::tryFiles()
 
 /* utils */
 
-bool http::HttpV1::fileExists(const std::string& filename) {
+bool http::HttpV2::fileExists(const std::string& filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
-bool http::HttpV1::isDirectory(const std::string& filename) {
+bool http::HttpV2::isDirectory(const std::string& filename) {
     struct stat buffer;
     if (stat(filename.c_str(), &buffer) == 0) {
         return S_ISDIR(buffer.st_mode);
@@ -343,7 +301,7 @@ bool http::HttpV1::isDirectory(const std::string& filename) {
     return false;
 }
 
-bool http::HttpV1::isFile(const std::string& filename) {
+bool http::HttpV2::isFile(const std::string& filename) {
     struct stat buffer;
     if (stat(filename.c_str(), &buffer) == 0) {
         return S_ISREG(buffer.st_mode);
@@ -351,7 +309,7 @@ bool http::HttpV1::isFile(const std::string& filename) {
     return false;
 }
 
-std::string http::HttpV1::trim(std::string &str) const
+std::string http::HttpV2::trim(std::string &str) const
 {
 	std::size_t start = str.find_first_not_of(" \t\n\r");
 	if (start == std::string::npos) return ("");

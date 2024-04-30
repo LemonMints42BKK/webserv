@@ -14,3 +14,8 @@ http::Http::~Http()
 {
 
 }
+
+int http::Http::getSocket()const
+{
+	return _socket;
+}
