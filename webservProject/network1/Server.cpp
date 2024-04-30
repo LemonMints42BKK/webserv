@@ -2,9 +2,8 @@
 
 
 
-server::Server::Server(cfg::Configs *configs) : _configs(configs)
+server::Server::Server(cfg::Configs *configs) : _configs(configs), _epoll_loop(true)
 {
-
 }
 
 server::Server::~Server()
@@ -36,9 +35,12 @@ void server::Server::start_server()
 	}
 
 	/* epoll */
-	// struct epoll_event ev, events[MAX_EVENTS];
+	__epoll_create();
+	__epoll_loop();
+}
 
-	/* Create epoll instance */
+void server::Server::__epoll_create()
+{
 	_epoll_fd = epoll_create (MAX_EVENTS);
 	if (_epoll_fd == -1) {
 		throw std::runtime_error ("epoll_create");
@@ -48,23 +50,28 @@ void server::Server::start_server()
 	
 	for (std::vector<int>::const_iterator it = _server_sockets.begin(); it < _server_sockets.end(); it++) {
 		
-		_ev.data.fd = *it;
+		struct epoll_event ev;
+		ev.data.fd = *it;
 
 		/* Interested in read's events using edge triggered mode */
-		_ev.events = EPOLLIN | EPOLLET ;
+		ev.events = EPOLLIN | EPOLLET ;
 
 		/* Allow epoll to monitor the server_fd socket */
-		if (epoll_ctl (_epoll_fd, EPOLL_CTL_ADD, *it, &_ev) == -1) {
+		if (epoll_ctl (_epoll_fd, EPOLL_CTL_ADD, *it, &ev) == -1) {
 			throw std::runtime_error ("epoll_ctl");
 		}
 	}
+}
 
-	while (1) {
+void server::Server::__epoll_loop()
+{
+	struct epoll_event events[MAX_EVENTS];
+	while (_epoll_loop) {
 		/* Returns only sockets for which there are events */
-		int nfds = epoll_wait(_epoll_fd, _events, MAX_EVENTS, -1);
+		int nfds = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
 
 		// debug
-		std::cout << "event come in: " << nfds << std::endl;
+		// std::cout << "event come in: " << nfds << std::endl;
 
 		if (nfds == -1) {
 			perror("epoll_wait");
@@ -73,83 +80,90 @@ void server::Server::start_server()
 
 		/* Iterate over sockets only having events */
 		for (int i = 0; i < nfds; i++) {
-			int fd = _events[i].data.fd;
 
-			//debug
-			std::cout << "fd: " << fd << ", event: " << _events[i].events << std::endl;
-			
-			// std:: cout << "debug: " << events[i].events << std::endl;
-			// if (fd < 3) continue;
+			struct epoll_event &event = events[i];
 
-			if (std::find(_server_sockets.begin(), _server_sockets.end(), fd) != _server_sockets.end()) {
+			if (std::find(_server_sockets.begin(), _server_sockets.end(), event.data.fd) != _server_sockets.end()
+				&& event.events & EPOLLIN) {
 				/* New connection request received */
-				__accept_new_connection_request(fd);
+				__accept_new_connection_request(event.data.fd);
+				continue;
 			}
-			
-			else if (_events[i].events & EPOLLERR) {
-
-			/* Client connection closed */
-				std::cout << "Close by socket: " << fd << std::endl;
-				delete _http[fd];
-				_http.erase(fd);
-				close(fd);
-			}
-
-			else if (_events[i].events & EPOLLIN) {
-				/* Received data on an existing client socket */
-				std::cout << "Connect by socket: " << fd << " EPOLLIN" << std::endl;
-				// recv_and_forward_message(fd);
-				// _http[fd]->readSocket();
-
-				// recv_and_forward_message(fd);
-
-				// _http[fd]->readSocket();
-
-				while(!_http[fd]->readSocket()){
-
-
-				}
-								//debug
-				std::cout << "read success set EPOLLOUT" << std::endl;
-
-				struct epoll_event ev;
-				ev.events = EPOLLOUT | EPOLLET;
-				ev.data.fd = _events[i].data.fd;
-				if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, ev.data.fd, &ev) == -1) {
-					close(ev.data.fd);
-					perror("epoll_ctl EPOLL_CTL_MOD: conn_sock");
-					return;
-				}
-				
-			}
-
-			else if (_events[i].events & EPOLLOUT) {
-
-				int fd = _events[i].data.fd;
-				/* Received data on an existing client socket */
-				std::cout << "Connect by socket: " << fd << " EPOLLOUT" << std::endl;
-				// recv_and_forward_message(fd);
-				_http[fd]->writeSocket();
-				
-				// mod to EPOLLIN
-				//debug
-				// std::cout << "read success set EPOLLIN" << std::endl;
-
-				// struct epoll_event ev;
-				// ev.events = EPOLLIN | EPOLLET;
-				// ev.data.fd = _events[i].data.fd;
-				// if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, ev.data.fd, &ev) == -1) {
-				// 	close(ev.data.fd);
-				// 	perror("epoll_ctl EPOLL_CTL_MOD: conn_sock");
-				// 	return;
-				// }
-
-				// close socket
-				
-				epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-				close (fd);
-			}
+			__handle_event1(event);		
 		}
+	}
+}
+
+/* for Http1 */
+void server::Server::__handle_event1(struct epoll_event &event)
+{
+	MYHTTP *http = (MYHTTP *) event.data.ptr;
+	if (!http) throw std::runtime_error("can not cast http");
+
+	if (event.events & EPOLLERR || event.events & EPOLLRDHUP) {
+
+		//debug
+		std::cout << "Close by socket: " << http->getSocket() << std::endl;
+
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
+		close (http->getSocket());
+		delete http;
+	}
+
+	else if (event.events & EPOLLIN) {
+
+		/* Received data on an existing client socket */
+		http->readSocket();
+	}
+}
+
+/* for Http2 */
+void server::Server::__handle_event2(struct epoll_event &event)
+{
+
+	MYHTTP *http = (MYHTTP *) event.data.ptr;
+	if (!http) throw std::runtime_error("can not cast http");
+
+	if (event.events & EPOLLERR || event.events & EPOLLRDHUP) {
+
+		//debug
+		// std::cout << "Close by socket: " << http->getSocket() << std::endl;
+
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
+		close (http->getSocket());
+		delete http;
+	}
+
+	else if (event.events & EPOLLIN) {
+
+		/* Received data on an existing client socket */
+		http->readSocket();
+		
+		//debug
+		// std::cout << "Connect by socket: " << http->getSocket() << " EPOLLIN" << std::endl;
+		// std::cout << "read success set EPOLLOUT" << std::endl;
+
+		// change event;
+		event.events = EPOLLOUT | EPOLLRDHUP | EPOLLET;
+		if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, http->getSocket(), &event) == -1) {
+			close(http->getSocket());
+			delete http;
+			perror("epoll_ctl EPOLL_CTL_MOD: EPOLLIN");
+		}
+	}
+
+	else if (event.events & EPOLLOUT) {
+
+		/* send data on an existing client socket */
+		http->writeSocket();
+
+		// debug
+		// std::cout << "Connect by socket: " << http->getSocket() << " EPOLLOUT" << std::endl;
+
+		// close socket
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
+		close (http->getSocket());
+		delete http;
 	}
 }
 
@@ -177,28 +191,27 @@ void server::Server::__accept_new_connection_request(int fd) {
         // fcntl(conn_sock, F_SETFL, O_NONBLOCK);
 
         /* Monitor new connection for read events in edge triggered mode */
-        _ev.events = EPOLLIN | EPOLLET;
-        _ev.data.fd = conn_sock;
+		struct epoll_event ev;
+        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+        ev.data.fd = conn_sock;
+		ev.data.ptr = new MYHTTP(conn_sock, _configs); 
 
         /* Allow epoll to monitor new connection */
-        if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, conn_sock, &_ev) == -1) {
+        if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
 			close(conn_sock);
             perror("epoll_ctl: conn_sock");
             return;
         }
 
-		/* Create Http */
-		_http[conn_sock] = new MYHTTP(conn_sock, _configs);
-    // }
+		// debug
+		std::cout << "New client connect on socket: " << conn_sock << std::endl;
+
 }
 
 void server::Server::stop_server()
 {
+	_epoll_loop = false;
 	__close_all_server_sockets();
-	for(std::map<int, MYHTTP*>::const_iterator it = _http.begin(); it != _http.end(); it++) {
-		std::cout << "http on socket: " << it->first << " was delete" << std::endl;
-		delete it->second;
-	}
 }
 
 void server::Server::__close_all_server_sockets()
@@ -208,6 +221,7 @@ void server::Server::__close_all_server_sockets()
 		std::cout << "server_socket: " << *it << " closed" << std::endl;
 		close(*it);
 	}
+	close (_epoll_fd);
 }
 
 int server::Server::__create_tcp_server_socket(std::string const &interface, std::string const &port)

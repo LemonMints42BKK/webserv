@@ -25,8 +25,8 @@ bool http::HttpV1::readSocket()
 	int byte_read;
 
 	while (true) {
-		byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, 0);
-		// byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, MSG_DONTWAIT);
+		// byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, 0);
+		byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, MSG_DONTWAIT);
 		if (byte_read < 0) return (false);
 		if (byte_read == 0) return (true);
 
@@ -35,12 +35,17 @@ bool http::HttpV1::readSocket()
 		
 		// std::cout << "debug from http byte_read: " << byte_read << std::endl; 
 		// debug
-		std::cout << _data.str() << std::endl;
+		// std::cout << _data.str() << std::endl;
 
 		if(!parser()) return (false);
 	}
 
 	return (false);
+}
+
+bool http::HttpV1::writeSocket()
+{
+	return (true);
 }
 
 bool http::HttpV1::parser()

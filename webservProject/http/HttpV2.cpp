@@ -24,13 +24,12 @@ bool http::HttpV2::readSocket()
 	char buffer[HTTP_BUFFER];
 	int byte_read;
 
-	// while (true) {
+	while (true) {
 		// byte_read = read(_socket, buffer, HTTP_BUFFER - 1);
 		// byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, 0);
 		byte_read = recv(_socket, buffer, HTTP_BUFFER - 1, MSG_DONTWAIT);
 		if (byte_read < 0) return (false);
 		if (byte_read == 0) {
-			parser ();
 			return (true);
 		}
 
@@ -38,10 +37,10 @@ bool http::HttpV2::readSocket()
 		_data.write(buffer, byte_read);
 		
 		// debug
-		std::cout << "debug from http byte_read: " << byte_read << std::endl; 
+		// std::cout << "debug from http byte_read: " << byte_read << std::endl; 
 		// std::cout << _data.str() << std::endl;
-		// if(!parser()) return (false);
-	// }
+		if(!parser()) return (false);
+	}
 
 	return (false);
 }

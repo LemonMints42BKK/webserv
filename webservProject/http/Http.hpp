@@ -92,6 +92,8 @@ namespace http
 			Http(int socket, cfg::Configs *configs);
 			virtual ~Http();
 			virtual bool readSocket() = 0;
+			virtual bool writeSocket() = 0;
+			int getSocket() const;
 	};
 
 	class Httptest : public Http
@@ -125,6 +127,7 @@ namespace http
 			HttpV1(int socket, cfg::Configs *configs);
 			~HttpV1();
 			bool readSocket();
+			bool writeSocket();
 			std::string trim(std::string &string) const;
 	};
 

@@ -1,6 +1,7 @@
 #include "Http.hpp"
 
 #include <unistd.h>
+#include <sys/socket.h>
 
 http::Response::Response()
 {
@@ -42,8 +43,8 @@ bool http::Response::response(int socket, int status, std::string const &filenam
 	setStatusLine(status);
 	_header["Content-Type"] = content_type;
 	_header["Content-Length"] = ss.str();
-	// _header["Connection"] = "keep-alive";
-	// _header["Keep-Alive"] = "timeout=5, max=20";
+	_header["Connection"] = "Keep-Alive";
+	_header["Keep-Alive"] = "timeout=5, max=20";
 	file.seekg(0);
 
 	ss.str("");
@@ -55,7 +56,7 @@ bool http::Response::response(int socket, int status, std::string const &filenam
 	ss << std::endl;
 	ss << file.rdbuf();
 	ss << std::endl;
-	write(socket, ss.str().c_str(), ss.tellp());
+	send(socket, ss.str().c_str(), ss.tellp(), MSG_DONTWAIT);
 	// write(1, ss.str().c_str(), ss.tellp());
 
 	return (true);
@@ -82,14 +83,14 @@ bool http::Response::response(int socket, int status)
 	std::stringstream ss;
 	setStatusLine(status);
 	ss << _status_line << std::endl;
-	// ss << "Connection: keep-alive" << std::endl;
-	// ss << "Keep-Alive: timeout=" << 5 << ", max=" << 20 << std::endl;
+	ss << "Connection: Keep-Alive" << std::endl;
+	ss << "Keep-Alive: timeout=" << 5 << ", max=" << 20 << std::endl;
 	ss << "Content-Type: text/html" << std::endl;
 	ss << "Content-Length: " << content.tellp() << std::endl;
 	ss << std::endl;
 	ss << content.str();
 	ss << std::endl;
 
-	write(socket, ss.str().c_str(), ss.tellp());
+	send(socket, ss.str().c_str(), ss.tellp(), MSG_DONTWAIT);
 	return (true);
 }
