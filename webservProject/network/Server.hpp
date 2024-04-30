@@ -28,10 +28,11 @@ namespace server
 	{
 	private:
 		cfg::Configs *_configs;
-		double _time[FD_SETSIZE];
+		time_t _time[FD_SETSIZE];
 		http::Http *_http[FD_SETSIZE];
 
 		void __init_config(); // utils.cpp
+		//manage in select
 		fd_set _working_set;
 		int log_output;
 		fd_set _master_set;
@@ -40,7 +41,11 @@ namespace server
 		bool _end_server;
 		bool _close_conn;
 		std::vector<int> socketlist;
-		
+		//data socket
+		// std::pair<std::string, std::string> server;
+		// std::pair<std::string, std::string> client;
+
+
 		int	__createNewSocket(std::string ip ,std::string port); // createNewSocket.cpp
 		void __getNewSocketfd(int &sockfd); // createNewSocket.cpp
 		void __closeAllSocketlist(void); // createNewSocket.cpp
@@ -53,7 +58,7 @@ namespace server
 		void __runMoniter(void);// startserver.cpp
 		void __loopCheckFd_workingSet(void); //startserver.cpp
 		void __setNonBlocking(int socket); // startserver.cpp
-		double  __getTime(); // startserver.cpp
+		time_t  __getTime(); // startserver.cpp
 		bool __checkIsSocketListen(size_t &socket); // startserver.cpp
 
 

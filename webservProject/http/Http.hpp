@@ -92,17 +92,26 @@ namespace http
 			Http(int socket, cfg::Configs *configs);
 			virtual ~Http();
 			virtual bool readSocket() = 0;
+			void getSocket(){
+				std::cout << "Socket: " << _socket << std::endl;
+			};
 			virtual bool writeSocket() = 0;
 			int getSocket() const;
 	};
 
 	class Httptest : public Http
 	{
+		private:
+			Response _response;
 		public:
 			Httptest(int socket, cfg::Configs *configs);
 			bool readSocket();
 			void sendResponse();
 			~Httptest();
+
+			void cgi();
+			double getTime();
+			void readSocket_withCgi();
 	};
 
 	class HttpV1 : public Http
@@ -120,6 +129,10 @@ namespace http
 			bool fileExists(const std::string& filename);
 			bool isDirectory(const std::string& filename);
 			bool isFile(const std::string& filename);
+			
+			void getExiteAndStatusForResponse(pid_t exited_pid, int status);
+			pid_t wait_Child(pid_t child_pid, int *status);
+			time_t getTime();
 			// bool errorPage(int status);
 
 
