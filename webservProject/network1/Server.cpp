@@ -103,7 +103,7 @@ void server::Server::__handle_event1(struct epoll_event &event)
 	if (event.events & EPOLLERR || event.events & EPOLLRDHUP) {
 
 		//debug
-		std::cout << "Close by socket: " << http->getSocket() << std::endl;
+		// std::cout << "Close by socket: " << http->getSocket() << std::endl;
 
 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
 		close (http->getSocket());

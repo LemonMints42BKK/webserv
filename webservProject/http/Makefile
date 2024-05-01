@@ -14,7 +14,8 @@ SRCS =	Http.cpp \
 		HttpV2.cpp \
 		Request.cpp \
 		Response.cpp \
-		ResponseV2.cpp
+		ResponseV2.cpp \
+		cgi.cpp
 
 HEADERS = Http.hpp
 

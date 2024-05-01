@@ -92,9 +92,6 @@ namespace http
 			Http(int socket, cfg::Configs *configs);
 			virtual ~Http();
 			virtual bool readSocket() = 0;
-			void getSocket(){
-				std::cout << "Socket: " << _socket << std::endl;
-			};
 			virtual bool writeSocket() = 0;
 			int getSocket() const;
 	};
