@@ -130,6 +130,7 @@ namespace http
 			void getExiteAndStatusForResponse(pid_t exited_pid, int status);
 			pid_t wait_Child(pid_t child_pid, int *status);
 			time_t getTime();
+			bool cgiUpload();
 			// bool errorPage(int status);
 
 

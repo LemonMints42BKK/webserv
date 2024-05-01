@@ -80,3 +80,32 @@ bool http::HttpV1::cgi()
 	return (true);
 	// return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
 }
+
+bool http::HttpV1::cgiUpload()
+{
+	_stage = RESPONSED;
+	pid_t pid = fork();
+	if(pid == 0)
+	{
+		pid_t child_pid = fork();
+		if (child_pid == 0) {
+			char *envp[] = {NULL};
+			// char *argv[3] = {"/usr/bin/python3", "./CgiFile/GenPage.py", NULL};
+			char *argv[3];
+			argv[0] = strdup("/usr/bin/python3");
+			argv[1] = strdup("http/CgiFile/GenPage.py");
+			argv[2] = NULL;
+			if(execve(argv[0], argv, envp) == -1)
+				_exit(1);
+			_exit(0);
+		} else {
+			// Parent process
+			int status;
+			pid_t exited_pid = wait_Child(child_pid, &status);
+			getExiteAndStatusForResponse(exited_pid, status);
+		}
+		_exit(0);
+	}	
+	return (true);
+	// return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
+}
