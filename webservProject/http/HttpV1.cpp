@@ -178,15 +178,15 @@ bool http::HttpV1::router()
 		return (cgi());
 	}
 	else if (loc->getLocation() == "/upload") {
-		std::cout << _data.str() << std::endl;
-		std::cout << _request->getHeader("Content-Type") << std::endl;
+		// std::cout << _data.str() << std::endl;
+		// std::cout << _request->getHeader("Content-Type") << std::endl;
 		std::string method = _request->getMethod().c_str();
 		method = method.substr(0, method.find(' '));
 		if(method != "POST") {
 			_response->response(_socket, 405);
 		}
 		_request->setMethod("POST");
-		
+		cgiUpload();
 		// std::string buffer;
 		// while (std::getline(_data, buffer)) {
 		// 	std::cout << buffer << std::endl;

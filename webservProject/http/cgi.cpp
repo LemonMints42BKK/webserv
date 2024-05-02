@@ -89,20 +89,39 @@ bool http::HttpV1::cgiUpload()
 	{
 		pid_t child_pid = fork();
 		if (child_pid == 0) {
-			char *envp[] = {NULL};
-			// char *argv[3] = {"/usr/bin/python3", "./CgiFile/GenPage.py", NULL};
-			char *argv[3];
-			argv[0] = strdup("/usr/bin/python3");
-			argv[1] = strdup("http/CgiFile/GenPage.py");
-			argv[2] = NULL;
-			if(execve(argv[0], argv, envp) == -1)
+			// FILE *file = tmpfile();
+			// long filetmp = fileno(file);
+			std::cout << "data: " << _data.str() << std::endl;
+			std::size_t found = _data.str().find("\r\n\r\n");
+			if(found == std::string::npos) {
+				_response->response(_socket, 400);
 				_exit(1);
-			_exit(0);
+			}
+			// std::string body = _data.str().substr(found + 4);
+			// std::cout << body << std::endl;
+			// char buffer[1];
+			// int i = 0;
+			// int bytesread = 1;
+			// while( bytesread > 0) {
+			// 	bytesread = read(filetmp, buffer , 1);
+			// 	// printf("bytesread: %d\n", bytesread);
+			// 	i += bytesread;
+			// }
+    		// printf("i: %d\n", i);
+			// char *envp[] = {NULL};
+			// // char *argv[3] = {"/usr/bin/python3", "./CgiFile/GenPage.py", NULL};
+			// char *argv[3];
+			// argv[0] = strdup("/usr/bin/python3");
+			// argv[1] = strdup("http/CgiFile/GenPage.py");
+			// argv[2] = NULL;
+			// if(execve(argv[0], argv, envp) == -1)
+			// 	_exit(1);
+			// _exit(0);
 		} else {
 			// Parent process
-			int status;
-			pid_t exited_pid = wait_Child(child_pid, &status);
-			getExiteAndStatusForResponse(exited_pid, status);
+			// int status;
+			// pid_t exited_pid = wait_Child(child_pid, &status);
+			// getExiteAndStatusForResponse(exited_pid, status);
 		}
 		_exit(0);
 	}	
