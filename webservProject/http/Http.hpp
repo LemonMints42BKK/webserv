@@ -11,7 +11,8 @@ namespace http
 	#define START_LINE 1
 	#define HEADER 2
 	#define BODY 3
-	#define RESPONSED 4
+	#define ROUTER 4
+	#define RESPONSED 5
 
 	class Request
 	{
@@ -117,9 +118,12 @@ namespace http
 			int _stage;
 			Request *_request;
 			Response *_response;
+			std::string _boundary;
+			std::stringstream _body;
 			bool parser();
 			bool parserFirstLine();
 			bool parserHeader();
+			bool parserBody();
 			bool router();
 			bool cgi();
 			bool tryFiles();

@@ -38,7 +38,7 @@ bool http::HttpV1::readSocket()
 		// debug
 		// std::cout << _data.str() << std::endl;
 
-		if(!parser()) return (false);
+		if(!parser()) return (true);
 	}
 
 	return (false);
@@ -80,7 +80,12 @@ bool http::HttpV1::parser()
 	}
 
 	if (_stage == BODY) {
+		// if(!parserBody()) return true;
+		parserBody();
+	}
 
+	if (_stage == ROUTER) {
+		router();
 	}
 
 	if (_stage == RESPONSED) {
@@ -89,6 +94,7 @@ bool http::HttpV1::parser()
 		delete _response;
 		_response = NULL;
 		_stage = START_LINE;
+		return (false);
 	}
 
 	return (true);
@@ -128,22 +134,21 @@ bool http::HttpV1::parserHeader()
 
 		if (!buffer.length() || buffer.c_str()[0] == '\r') 
 		{
-			// check location root if not exist return 404
-			if (!router()) {
-				_stage = RESPONSED;
-				return _response->response(_socket, 404);
-			}
-			
 			//check if has content body
 			if (_request->getHeader("Content-Type").length()) {
+				// std::cout << "parserHeader should parserBody" << std::endl;
 				_stage = BODY;
-				break ;
+
+				std::string buffer;
+				std::istringstream iss(_request->getHeader("Content-Type"));
+				iss >> buffer;
+				// std::cout << buffer << std::endl;
+				iss >> buffer;
+				// std::cout << buffer << std::endl;
+				_boundary = "--" + buffer.substr(9) + "--\r";
 			}
-
-			// make response
-
-
-			return (true);
+			else _stage = ROUTER;
+			break ;
 		}
 		std::size_t colon = buffer.find(':');
 		if (colon == std::string::npos) {
@@ -165,6 +170,32 @@ bool http::HttpV1::parserHeader()
 	return (true);
 }
 
+bool http::HttpV1::parserBody()
+{
+	std::string buffer;
+	// while (std::getline(_data, buffer))
+	// {
+		// std::cout << "parserBody: " << buffer << std::endl;
+		// std::cout << "parserBody: " << _boundary << std::endl;
+		std::stringstream tmp;
+		tmp << _data.rdbuf();
+		_body << tmp.str();
+		while (std::getline(tmp, buffer))
+		{
+			std::cout << buffer << std::endl;
+			if (buffer == _boundary) {
+				// std::cout << tmp.str() << std::endl;
+				std::cout << "found boundary" << std::endl;
+				_stage = ROUTER;
+				return (true);
+
+			}
+		}
+	// }
+	// send(_socket, "100 Continue", 13, 0);
+	return (false);
+}
+
 bool http::HttpV1::router()
 {
 	std::string location = _request->getLocation();
@@ -178,6 +209,7 @@ bool http::HttpV1::router()
 		return (cgi());
 	}
 	else if (loc->getLocation() == "/upload") {
+
 		// std::cout << _data.str() << std::endl;
 		// std::cout << _request->getHeader("Content-Type") << std::endl;
 		std::string method = _request->getMethod().c_str();
@@ -191,6 +223,7 @@ bool http::HttpV1::router()
 		// while (std::getline(_data, buffer)) {
 		// 	std::cout << buffer << std::endl;
 		// }
+
 		_stage = RESPONSED;
 		return _response->response(_socket, 201);
 	}
