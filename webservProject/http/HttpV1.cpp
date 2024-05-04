@@ -166,7 +166,7 @@ bool http::HttpV1::parserHeader()
 
 			// set default error page
 			_response->set_default_err_page(_configs->getErrorPage(_request->getHeader("Host")));
-			std::cout << "defalut error page: " << _configs->getErrorPage(_request->getHeader("Host")) << std::endl;
+			// std::cout << "defalut error page: " << _configs->getErrorPage(_request->getHeader("Host")) << std::endl;
 			break ;
 		}
 		std::size_t colon = buffer.find(':');
