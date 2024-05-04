@@ -49,6 +49,7 @@ namespace http
 		private:
 			std::string _status_line;
 			std::string _content;
+			std::string _default_err_page;
 			void setStatusLine(int status);
 			std::map<int, std::string> _status;
 			std::map<std::string, std::string> _header;
@@ -60,6 +61,8 @@ namespace http
 			bool response(int socket, int status);
 			void setContent(std::string const &file);
 			// void setHeader(std::string, std::string);
+			bool response_redirect(int socket, int status, std::string const &location);
+			void set_default_err_page(std::string const &str);
 
 	};
 

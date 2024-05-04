@@ -56,12 +56,13 @@ bool http::HttpV1::parser()
 		_request = new Request;
 		_response = new Response;
 		if (!parserFirstLine()) {
-			delete _request;
-			_request = NULL;
-			delete _response;
-			_response = NULL;
-			_stage = START_LINE;
-			return (false);
+			// delete _request;
+			// _request = NULL;
+			// delete _response;
+			// _response = NULL;
+			// _stage = START_LINE;
+			// return (false);
+			_stage = RESPONSED;
 		}
 
 		// debug 
@@ -70,12 +71,13 @@ bool http::HttpV1::parser()
 
 	if (_stage == HEADER) {
 		if (!parserHeader()) {
-			delete _request;
-			_request = NULL;
-			delete _response;
-			_response = NULL;
-			_stage = START_LINE;
-			return (false);
+			// delete _request;
+			// _request = NULL;
+			// delete _response;
+			// _response = NULL;
+			// _stage = START_LINE;
+			// return (false);
+			_stage = RESPONSED;
 		}
 	}
 
@@ -85,7 +87,10 @@ bool http::HttpV1::parser()
 	}
 
 	if (_stage == ROUTER) {
-		router();
+		if (!router()) {
+			_stage = RESPONSED;
+			_response->response(_socket, 404);
+		}
 	}
 
 	if (_stage == RESPONSED) {
@@ -94,6 +99,8 @@ bool http::HttpV1::parser()
 		delete _response;
 		_response = NULL;
 		_stage = START_LINE;
+		_data.str(std::string());
+		_body.str(std::string());
 		return (false);
 	}
 
@@ -136,18 +143,30 @@ bool http::HttpV1::parserHeader()
 		{
 			//check if has content body
 			if (_request->getHeader("Content-Type").length()) {
-				// std::cout << "parserHeader should parserBody" << std::endl;
-				_stage = BODY;
-
 				std::string buffer;
 				std::istringstream iss(_request->getHeader("Content-Type"));
 				iss >> buffer;
-				// std::cout << buffer << std::endl;
+				if (buffer != "multipart/form-data;") {
+					_stage = RESPONSED;
+					return (_response->response(_socket, 422));
+				}
 				iss >> buffer;
-				// std::cout << buffer << std::endl;
 				_boundary = "--" + buffer.substr(9) + "--\r";
-			}
+				
+				// check length of content
+				int cmb = _configs->getClientMaxBody(_request->getHeader("Host"));
+				if (cmb > 0 && cmb < std::atoi(_request->getHeader("Content-Length").c_str()))
+				{
+					_stage = RESPONSED;
+					return (_response->response(_socket, 413));
+				}
+				_stage = BODY;
+			}	
 			else _stage = ROUTER;
+
+			// set default error page
+			_response->set_default_err_page(_configs->getErrorPage(_request->getHeader("Host")));
+			std::cout << "defalut error page: " << _configs->getErrorPage(_request->getHeader("Host")) << std::endl;
 			break ;
 		}
 		std::size_t colon = buffer.find(':');
@@ -173,26 +192,17 @@ bool http::HttpV1::parserHeader()
 bool http::HttpV1::parserBody()
 {
 	std::string buffer;
-	// while (std::getline(_data, buffer))
-	// {
-		// std::cout << "parserBody: " << buffer << std::endl;
-		// std::cout << "parserBody: " << _boundary << std::endl;
-		std::stringstream tmp;
-		tmp << _data.rdbuf();
-		_body << tmp.str();
-		while (std::getline(tmp, buffer))
-		{
-			// std::cout << buffer << std::endl;
-			if (buffer == _boundary) {
-				// std::cout << tmp.str() << std::endl;
-				std::cout << "found boundary" << std::endl;
-				_stage = ROUTER;
-				return (true);
-
-			}
+	std::stringstream tmp;
+	tmp << _data.rdbuf();
+	_body << tmp.str();
+	while (std::getline(tmp, buffer))
+	{
+		if (buffer == _boundary) {
+			std::cout << "found boundary" << std::endl;
+			_stage = ROUTER;
+			return (true);
 		}
-	// }
-	// send(_socket, "100 Continue", 13, 0);
+	}
 	return (false);
 }
 
@@ -210,9 +220,6 @@ bool http::HttpV1::router()
 		return (cgi());
 	}
 	else if (loc->getLocation() == "/upload") {
-
-		// std::cout << _data.str() << std::endl;
-		// std::cout << _request->getHeader("Content-Type") << std::endl;
 		std::string method = _request->getMethod().c_str();
 		method = method.substr(0, method.find(' '));
 		if(method != "POST") {
@@ -235,6 +242,12 @@ bool http::HttpV1::router()
 		cgiDelete();
 		_stage = RESPONSED;
 		return _response->response(_socket, 200);
+	}
+	else if (loc->getRedirect().length()) 
+	{
+		std::cout << "redirect=" << loc->getRedirect() << std::endl;
+		_stage = RESPONSED;
+		return _response->response_redirect(_socket, 307, loc->getRedirect());
 	}
 	else return (tryFiles());
 }
