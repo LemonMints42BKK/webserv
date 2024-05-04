@@ -131,10 +131,13 @@ namespace http
 			bool isDirectory(const std::string& filename);
 			bool isFile(const std::string& filename);
 			
-			void getExiteAndStatusForResponse(pid_t exited_pid, int status);
+			void getExiteAndStatusForResponseByPath(pid_t exited_pid, int status, std::string path);
 			pid_t wait_Child(pid_t child_pid, int *status);
 			time_t getTime();
 			bool cgiUpload();
+			bool cgiDelete();
+			long copyDataToFdTmp();
+			void execveByPath(std::string path);
 			// bool errorPage(int status);
 
 

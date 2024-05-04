@@ -4,7 +4,10 @@
 #include <sys/wait.h>
 #include <iostream>
 #include <string.h>
-
+#include <sstream>
+#include <iterator>
+#include <fstream>
+#include <fcntl.h>
 time_t http::HttpV1::getTime()
 {
 	time_t timer;
@@ -26,7 +29,7 @@ pid_t http::HttpV1::wait_Child(pid_t child_pid, int *status)
     return exited_pid;
 }
 
-void http::HttpV1::getExiteAndStatusForResponse(pid_t exited_pid, int status)
+void http::HttpV1::getExiteAndStatusForResponseByPath(pid_t exited_pid, int status, std::string path)
 {
 	if(exited_pid < 0) {
 		std::cout << "CGI: failed" << std::endl;
@@ -34,22 +37,25 @@ void http::HttpV1::getExiteAndStatusForResponse(pid_t exited_pid, int status)
 		_response->response(_socket, 500);
 	}
 
-	if (WIFEXITED(status)) {
-		int exit_status = WEXITSTATUS(status);
-		if (exit_status == 0) {
-			std::cout << "CGI: success" << std::endl;
-			_stage = RESPONSED;
-			_response->response(_socket, 200, "./www/cgi.html", "text/html");
-		} else {
-			_stage = RESPONSED;
-			std::cout << "CGI: failed" << std::endl;
-			_response->response(_socket, 500);
-		}
-	} else {
+	if (!WIFEXITED(status)) {
 		std::cout << "CGI: failed" << std::endl;
 		_stage = RESPONSED;
 		_response->response(_socket, 500);
-	}
+	} 
+	int exit_status = WEXITSTATUS(status);
+	if (exit_status != 0) {
+		_stage = RESPONSED;
+		std::cout << "CGI: failed" << std::endl;
+		_response->response(_socket, 500);
+	} 
+	std::cout << "CGI: success" << std::endl;
+	_stage = RESPONSED;
+	if(path == "/GenPage.py")
+		_response->response(_socket, 200, "./www/cgi.html", "text/html");
+	if(path == "/upload.py")
+		_response->response(_socket, 201);
+	if(path == "/delete.py")
+		_response->response(_socket, 204);
 }
 
 bool http::HttpV1::cgi()
@@ -60,27 +66,49 @@ bool http::HttpV1::cgi()
 	{
 		pid_t child_pid = fork();
 		if (child_pid == 0) {
-			char *envp[] = {NULL};
-			// char *argv[3] = {"/usr/bin/python3", "./CgiFile/GenPage.py", NULL};
-			char *argv[3];
-			argv[0] = strdup("/usr/bin/python3");
-			argv[1] = strdup("http/CgiFile/GenPage.py");
-			argv[2] = NULL;
-			if(execve(argv[0], argv, envp) == -1)
-				_exit(1);
+			execveByPath("http/CgiFile/GenPage.py");
 			_exit(0);
 		} else {
-			// Parent process
 			int status;
 			pid_t exited_pid = wait_Child(child_pid, &status);
-			getExiteAndStatusForResponse(exited_pid, status);
+			getExiteAndStatusForResponseByPath(exited_pid, status, "/GenPage.py");
 		}
 		_exit(0);
 	}	
 	return (true);
-	// return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
 }
 
+long http::HttpV1::copyDataToFdTmp()
+{
+	FILE *file = tmpfile();
+	int i = 0;
+
+	std::stringstream buff ;
+	while(i < _body.tellp()) {
+		char buffer;
+		_body.get(buffer);
+		fputc(buffer, file);
+		i++;
+	}
+	printf("i : %d\n", i);
+	std::rewind(file);
+	long filetmp = fileno(file);
+	return (filetmp);
+}
+
+void	http::HttpV1::execveByPath(std::string path)
+{
+	char *envp[] = {NULL};
+	char *argv[6];
+	argv[0] = strdup("/usr/bin/python3");
+	argv[1] = strdup(path.c_str());
+	argv[2] = strdup(_request->getMethod().c_str());
+	argv[3] = strdup(_request->getHeader("Content-Type").c_str());
+	argv[4] = strdup(_configs->getRoot(_request->getHeader("Host"), _request->getLocation()).c_str());
+	argv[5] = NULL;
+	if(execve(argv[0], argv, envp) == -1)
+		_exit(1);
+}
 bool http::HttpV1::cgiUpload()
 {
 	_stage = RESPONSED;
@@ -89,42 +117,36 @@ bool http::HttpV1::cgiUpload()
 	{
 		pid_t child_pid = fork();
 		if (child_pid == 0) {
-			// FILE *file = tmpfile();
-			// long filetmp = fileno(file);
-			std::cout << "data: " << _data.str() << std::endl;
-			std::size_t found = _data.str().find("\r\n\r\n");
-			if(found == std::string::npos) {
-				_response->response(_socket, 400);
-				_exit(1);
-			}
-			// std::string body = _data.str().substr(found + 4);
-			// std::cout << body << std::endl;
-			// char buffer[1];
-			// int i = 0;
-			// int bytesread = 1;
-			// while( bytesread > 0) {
-			// 	bytesread = read(filetmp, buffer , 1);
-			// 	// printf("bytesread: %d\n", bytesread);
-			// 	i += bytesread;
-			// }
-    		// printf("i: %d\n", i);
-			// char *envp[] = {NULL};
-			// // char *argv[3] = {"/usr/bin/python3", "./CgiFile/GenPage.py", NULL};
-			// char *argv[3];
-			// argv[0] = strdup("/usr/bin/python3");
-			// argv[1] = strdup("http/CgiFile/GenPage.py");
-			// argv[2] = NULL;
-			// if(execve(argv[0], argv, envp) == -1)
-			// 	_exit(1);
-			// _exit(0);
+			dup2(copyDataToFdTmp(), STDIN_FILENO);
+			execveByPath("http/CgiFile/upload.py");
+			_exit(0);
 		} else {
-			// Parent process
-			// int status;
-			// pid_t exited_pid = wait_Child(child_pid, &status);
-			// getExiteAndStatusForResponse(exited_pid, status);
+			int status;
+			pid_t exited_pid = wait_Child(child_pid, &status);
+			getExiteAndStatusForResponseByPath(exited_pid, status, "/upload.py");
 		}
 		_exit(0);
 	}	
 	return (true);
-	// return (_response->response(_socket, 200, "./www/cgi_inconstruction.html", "text/html"));
+}
+
+bool http::HttpV1::cgiDelete()
+{
+	_stage = RESPONSED;
+	pid_t pid = fork();
+	if(pid == 0)
+	{
+		pid_t child_pid = fork();
+		if (child_pid == 0) {
+			dup2(copyDataToFdTmp(), STDIN_FILENO);
+			execveByPath("http/CgiFile/delete.py");
+			_exit(0);
+		} else {
+			int status;
+			pid_t exited_pid = wait_Child(child_pid, &status);
+			getExiteAndStatusForResponseByPath(exited_pid, status, "/delete.py");
+		}
+		_exit(0);
+	}	
+	return (true);
 }

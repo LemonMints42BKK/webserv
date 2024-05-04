@@ -182,7 +182,7 @@ bool http::HttpV1::parserBody()
 		_body << tmp.str();
 		while (std::getline(tmp, buffer))
 		{
-			std::cout << buffer << std::endl;
+			// std::cout << buffer << std::endl;
 			if (buffer == _boundary) {
 				// std::cout << tmp.str() << std::endl;
 				std::cout << "found boundary" << std::endl;
@@ -195,6 +195,7 @@ bool http::HttpV1::parserBody()
 	// send(_socket, "100 Continue", 13, 0);
 	return (false);
 }
+
 
 bool http::HttpV1::router()
 {
@@ -210,8 +211,6 @@ bool http::HttpV1::router()
 	}
 	else if (loc->getLocation() == "/upload") {
 
-		// std::cout << _data.str() << std::endl;
-		// std::cout << _request->getHeader("Content-Type") << std::endl;
 		std::string method = _request->getMethod().c_str();
 		method = method.substr(0, method.find(' '));
 		if(method != "POST") {
@@ -219,13 +218,21 @@ bool http::HttpV1::router()
 		}
 		_request->setMethod("POST");
 		cgiUpload();
-		// std::string buffer;
-		// while (std::getline(_data, buffer)) {
-		// 	std::cout << buffer << std::endl;
-		// }
-
 		_stage = RESPONSED;
-		return _response->response(_socket, 201);
+		return true;
+	}
+	else if (loc->getLocation() == "/delete")
+	{
+		std::cout << "delete" << std::endl;
+		std::string method = _request->getMethod().c_str();
+		method = method.substr(0, method.find(' '));
+		if(method != "DELETE") {
+			_response->response(_socket, 405);
+		}
+		_request->setMethod("DELETE");
+		cgiDelete();
+		_stage = RESPONSED;
+		return true;
 	}
 	else return (tryFiles());
 }

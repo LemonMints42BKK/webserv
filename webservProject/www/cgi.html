@@ -5,6 +5,16 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>File Upload</title>
+        <script>
+            async function deleteFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch('/delete', {
+                    method: 'DELETE',
+                    body: formData
+                });
+            }
+        </script>
     </head>
     <body>
         <h1>File Upload</h1>
@@ -14,7 +24,7 @@
         </form>
         <h2>Uploaded Files:</h2>
         <ul>
-    <li>test.txt</li>
+    <li><input type="button" value="delete" onclick="deleteFile('file5Mb.txt')" > file5Mb.txt</li><li><input type="button" value="delete" onclick="deleteFile('index (4).php')" > index (4).php</li>
         </ul>
     </body>
     </html>

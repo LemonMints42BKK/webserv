@@ -8,6 +8,16 @@ def generate_html():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>File Upload</title>
+        <script>
+            async function deleteFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch('/delete', {
+                    method: 'DELETE',
+                    body: formData
+                });
+            }
+        </script>
     </head>
     <body>
         <h1>File Upload</h1>
@@ -22,7 +32,7 @@ def generate_html():
     for root, dirs, files in os.walk(os.path.abspath("www/upload")):
         if files.__len__() > 0:
             for file in files:
-                html += f"<li>{file}</li>"
+                html += f"<li><input type=\"button\" value=\"delete\" onclick=\"deleteFile('{file}')\" > {file}</li>"
     # for file in file_list:
     #     html += f"<li>{file}</li>"
     
