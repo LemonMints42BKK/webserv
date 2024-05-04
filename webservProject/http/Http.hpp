@@ -138,7 +138,6 @@ namespace http
 			pid_t wait_Child(pid_t child_pid, int *status);
 			time_t getTime();
 			bool cgiUpload();
-			bool cgiDelete();
 			long copyDataToFdTmp();
 			void execveByPath(std::string path);
 			bool cgiDelete();
