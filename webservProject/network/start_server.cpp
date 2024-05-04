@@ -109,7 +109,6 @@ void Server::__runMoniter(void)
 		{
 			printf("  select() timed out.  Check conn.\n");
 			__checkClientTimeOut();
-				// std::memset(&timeout, 0, sizeof(timeout));
 			std::memset(&_working_set, 0, sizeof(_working_set));
 			timeout.tv_sec  = 5;
 			timeout.tv_usec = 0;
@@ -143,13 +142,14 @@ bool Server::__checkIsSocketListen(size_t &socket)
 
 void Server::__loopCheckFd_workingSet(void)
 {
-	// int sum = 0;
+	int des_ready = 1;
 	_close_conn = false;
-	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
+	for (size_t i = 0; i <= static_cast<size_t>(_max_sd) && des_ready > 0; ++i)
 	{
 		// bool is_socket_listen = std::find(socketlist.begin(), socketlist.end(), i) != socketlist.end();
 		if (FD_ISSET(i, &_working_set))
 		{
+			des_ready -= 1;
 			if (__checkIsSocketListen(i))
 				__requestFromClient(static_cast<int>(i)); // Accept new client
 			else
@@ -169,7 +169,6 @@ void Server::__handle_close_conn(size_t socketfd)
 		printf("Close fd : %lu\n", socketfd);
 		close(socketfd);
 		FD_CLR(socketfd, &_master_set);
-		// print_fd_set(&_master_set);
 		delete _http[socketfd];
 		if (socketfd == static_cast<size_t>(_max_sd))
 		{
@@ -179,14 +178,6 @@ void Server::__handle_close_conn(size_t socketfd)
 	}
 }
 
-void Server::__CloseSocketFdListenInMasterSet(void)
-{
-	for (size_t i = 0; i < socketlist.size(); ++i)
-	{
-		close(socketlist[i]);
-		FD_CLR(socketlist[i], &_master_set);
-	}	
-}
 
 void Server::__setCleanupSocket(void)
 {
@@ -196,8 +187,6 @@ void Server::__setCleanupSocket(void)
 		{
 			close(i);
 			FD_CLR(i, &_master_set);
-			// printf("%p\n", _http[i]);
-			// printf("%d\n", _http[i] != NULL);
 			if(_http[i] != NULL)
 				delete _http[i];
 		}
@@ -206,38 +195,6 @@ void Server::__setCleanupSocket(void)
 	std::cout << "bye bye" << std::endl;
 }
 
-
-bool Server::__getCheckMaster_AllZero(void)
-{
-	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
-	{
-		if (FD_ISSET(i, &_master_set))
-			return false;
-	}
-	return true;
-}
-
-int InfoClient(int socketfd)
-{
-	int sockfd = socketfd;
-    struct sockaddr_in addr;
-    socklen_t addr_len = sizeof(addr);
-
-    // Assume sockfd is already initialized and connected
-
-    // Get the local address and port of the socket
-    if (getsockname(sockfd, (struct sockaddr *)&addr, &addr_len) == -1) {
-        perror("getsockname() failed");
-        return 1;
-    }
-
-    // Print the local address and port
-    char ip[INET_ADDRSTRLEN];
-    printf("Local IP: %s\n", inet_ntop(AF_INET, &addr.sin_addr, ip, INET_ADDRSTRLEN));
-    printf("Local Port: %d\n", ntohs(addr.sin_port));
-	return 0;
-
-}
 void Server::__requestFromClient(int socket)
 {
 	int new_sd;
@@ -250,7 +207,7 @@ void Server::__requestFromClient(int socket)
 		__setNonBlocking(new_sd);
 		std::cout << YELLOW << "New incoming connection " << new_sd << RESET <<std::endl;
 		// printf("New incoming connection %d\n", new_sd);
-		_http[new_sd] = new http::Httptest(new_sd, _configs);
+		_http[new_sd] = new http::HttpV1(new_sd, _configs);
 		_time[new_sd] = __getTime();
 		// printf("Time In %.f\n", _time[new_sd]);
 		// printf("first client %lu\n", 3 + socketlist.size());
@@ -272,8 +229,48 @@ void Server::__setNonBlocking(int socket)
 time_t Server::__getTime()
 {
 	time_t timer;
-    struct tm y2k ;
-    y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
-    y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
     return time(&timer);
 }
+
+
+
+// int InfoClient(int socketfd)
+// {
+// 	int sockfd = socketfd;
+//     struct sockaddr_in addr;
+//     socklen_t addr_len = sizeof(addr);
+
+//     // Assume sockfd is already initialized and connected
+
+//     // Get the local address and port of the socket
+//     if (getsockname(sockfd, (struct sockaddr *)&addr, &addr_len) == -1) {
+//         perror("getsockname() failed");
+//         return 1;
+//     }
+
+//     // Print the local address and port
+//     char ip[INET_ADDRSTRLEN];
+//     printf("Local IP: %s\n", inet_ntop(AF_INET, &addr.sin_addr, ip, INET_ADDRSTRLEN));
+//     printf("Local Port: %d\n", ntohs(addr.sin_port));
+// 	return 0;
+
+// }
+
+// bool Server::__getCheckMaster_AllZero(void)
+// {
+// 	for (size_t i = 0; i <= static_cast<size_t>(_max_sd); ++i)
+// 	{
+// 		if (FD_ISSET(i, &_master_set))
+// 			return false;
+// 	}
+// 	return true;
+// }
+
+// void Server::__CloseSocketFdListenInMasterSet(void)
+// {
+// 	for (size_t i = 0; i < socketlist.size(); ++i)
+// 	{
+// 		close(socketlist[i]);
+// 		FD_CLR(socketlist[i], &_master_set);
+// 	}	
+// }
