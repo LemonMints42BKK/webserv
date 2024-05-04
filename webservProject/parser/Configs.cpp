@@ -65,12 +65,12 @@ std::vector<std::string> const & cfg::Configs::getAllow(std::string const &serve
 	return (_http->getAllow(server_name, location));
 }
 
-int const & cfg::Configs::getClientMaxBody(std::string const &server_name)
+int const & cfg::Configs::getClientMaxBody(std::string const &server_name) const
 {
 	return (_http->getClientMaxBody(server_name));
 }
 
-std::string const & cfg::Configs::getErrorPage(std::string const &server_name)
+std::string const & cfg::Configs::getErrorPage(std::string const &server_name) const
 {
 	return (_http->getErrorPage(server_name));
 }

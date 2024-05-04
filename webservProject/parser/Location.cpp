@@ -17,6 +17,7 @@ cfg::Location::Location(std::ifstream &file) : AGroup(file, "location")
 	setIndex();
 	setAllow();
 	setCgi();
+	setRedirect();
 	// validate();
 }
 
@@ -153,6 +154,24 @@ bool cfg::Location::isCgi() const
 {
 	return (_cgi);
 }
+
+void cfg::Location::setRedirect()
+{
+	Redirect * re;
+	for (config_itc it = _configs.begin(); it != _configs.end(); it++)
+	{
+		if ((re = dynamic_cast<Redirect*>(*it))) {
+			_redirect = re->str();
+		}
+	}
+}
+
+std::string const &cfg::Location::getRedirect() const\
+{
+	return (_redirect);
+}
+
+
 
 void cfg::Location::validate() const
 {

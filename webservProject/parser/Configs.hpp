@@ -94,8 +94,8 @@ namespace cfg
 				std::string const &location) const;
 			std::vector<std::string> const & getAllow(std::string const &server_name, 
 				std::string const &location) const;
-			int const & getClientMaxBody(std::string const &server_name);
-			std::string const & getErrorPage(std::string const &server_name);
+			int const & getClientMaxBody(std::string const &server_name) const;
+			std::string const & getErrorPage(std::string const &server_name) const;
 			std::vector<std::pair<std::string, std::string> >  const & getListen(std::string server_name);
 			std::string const getTypes(std::string const &file) const;
 	};
@@ -173,6 +173,7 @@ namespace cfg
 			bool _cgi;
 			std::string _cgi_file;
 			std::string _cgi_exe;
+			std::string _redirect;
 			std::vector<std::string> _index;
 			std::vector<std::string> _allow;
 			void init(std::ifstream &file);
@@ -181,6 +182,7 @@ namespace cfg
 			void setIndex();
 			void setAllow();
 			void setCgi();
+			void setRedirect();
 		public:
 			Location(std::ifstream &file);
 			~Location();
@@ -191,6 +193,7 @@ namespace cfg
 			bool isCgi() const;
 			std::string const &getCgiFile() const;
 			std::string const &getCgiExe() const;
+			std::string const &getRedirect() const;
 	};
 
 	class Types : public AGroup

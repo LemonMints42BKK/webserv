@@ -1,4 +1,5 @@
 #include "Configs.hpp"
+#include "unistd.h"
 
 cfg::Server::Server(std::ifstream &file) : AGroup(file, "server")
 {
@@ -161,6 +162,8 @@ void cfg::Server::setErrorPage()
 		}
 	}
 	if (n != 1) throw(std::runtime_error("validate server error_page"));
+	if (access(_error_page.c_str(), R_OK) == -1) 
+		throw(std::runtime_error("validate server error_page: file not found"));
 }
 
 std::string const & cfg::Server::getErrorPage() const
