@@ -8,7 +8,7 @@ def parse_multipart_form_data(request_string):
     try:
         # print(len(request_string))
         byte_stream = io.BytesIO(request_string.encode('utf-8', 'surrogateescape'))
-
+        print(len(byte_stream.getvalue()))
         # print(request_string.earse(0, 2))
         # print(type(byte_stream))
         form = cgi.FieldStorage(
