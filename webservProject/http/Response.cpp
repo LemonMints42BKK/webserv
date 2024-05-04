@@ -7,9 +7,12 @@ http::Response::Response()
 {
 	_status[200] = "OK";
 	_status[201] = "Created";
+	_status[307] = "Temporary Redirect";
 	_status[400] = "Bad Request";
 	_status[404] = "Not Found";
 	_status[405] = "Method Not Allowed";
+	_status[413] = "Content Too Large";
+	_status[422] = "Unprocessable Content";
 	_status[502] = "Bad Gateway";
 }
 
@@ -67,7 +70,11 @@ bool http::Response::response(int socket, int status, std::string const &filenam
 */
 bool http::Response::response(int socket, int status)
 {
-	
+	std::cout << _default_err_page << std::endl;
+	if (status == 404 && _default_err_page.length())
+	{
+		return response(socket, 404, _default_err_page, "text/html");
+	}
 	std::stringstream content;
 	content << "<!DOCTYPE html>" << std::endl;
 	content << "<html>" << std::endl;
@@ -93,4 +100,21 @@ bool http::Response::response(int socket, int status)
 
 	send(socket, ss.str().c_str(), ss.tellp(), MSG_DONTWAIT);
 	return (true);
+}
+
+bool http::Response::response_redirect(int socket, int status, std::string const &location)
+{
+	std::stringstream ss;
+	setStatusLine(status);
+	ss << _status_line << std::endl;
+	ss << "Location: " << location << std::endl;
+	ss << std::endl;
+
+	send(socket, ss.str().c_str(), ss.tellp(), MSG_DONTWAIT);
+	return (true);
+}
+
+void http::Response::set_default_err_page(std::string const &str)
+{
+	_default_err_page = str;
 }

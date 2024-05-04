@@ -33,13 +33,14 @@ namespace server
 		bool _epoll_loop;
 		int _epoll_fd;
 		std::vector<int> _server_sockets;
+		std::map<int, MYHTTP*> _http;
 		int __create_tcp_server_socket(std::string const &interface, std::string const &port);
 		void __close_all_server_sockets();
 		void __accept_new_connection_request(int fd);
 		void __epoll_create();
 		void __epoll_loop();
 		void __handle_event1(struct epoll_event &event);
-		void __handle_event2(struct epoll_event &event);
+		// void __handle_event2(struct epoll_event &event);
 	public:
 		Server(cfg::Configs *configs);
 		~Server();

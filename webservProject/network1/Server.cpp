@@ -8,6 +8,12 @@ server::Server::Server(cfg::Configs *configs) : _configs(configs), _epoll_loop(t
 
 server::Server::~Server()
 {
+	for (std::map<int, MYHTTP*>::iterator it = _http.begin();
+			it != _http.end(); it++) {
+		close (it->second->getSocket());
+		delete it->second;
+	}
+
 }
 
 void server::Server::start_server()
@@ -97,75 +103,78 @@ void server::Server::__epoll_loop()
 /* for Http1 */
 void server::Server::__handle_event1(struct epoll_event &event)
 {
-	MYHTTP *http = (MYHTTP *) event.data.ptr;
-	if (!http) throw std::runtime_error("can not cast http");
+	// MYHTTP *http = (MYHTTP *) event.data.ptr;
+	// MYHTTP *http = _http[event.data.fd];
+	// if (!http) throw std::runtime_error("can not cast http");
+	int fd = event.data.fd;
 
 	if (event.events & EPOLLERR || event.events & EPOLLRDHUP) {
 
 		//debug
 		// std::cout << "Close by socket: " << http->getSocket() << std::endl;
 
-		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
-		close (http->getSocket());
-		delete http;
+		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _http[fd]->getSocket(), NULL);
+		close (_http[fd]->getSocket());
+		delete _http[fd];
+		_http.erase(fd);
 	}
 
 	else if (event.events & EPOLLIN) {
 
 		/* Received data on an existing client socket */
-		http->readSocket();
+		_http[fd]->readSocket();
 	}
 }
 
 /* for Http2 */
-void server::Server::__handle_event2(struct epoll_event &event)
-{
+// void server::Server::__handle_event2(struct epoll_event &event)
+// {
 
-	MYHTTP *http = (MYHTTP *) event.data.ptr;
-	if (!http) throw std::runtime_error("can not cast http");
+// 	MYHTTP *http = (MYHTTP *) event.data.ptr;
+// 	if (!http) throw std::runtime_error("can not cast http");
 
-	if (event.events & EPOLLERR || event.events & EPOLLRDHUP) {
+// 	if (event.events & EPOLLERR || event.events & EPOLLRDHUP) {
 
-		//debug
-		// std::cout << "Close by socket: " << http->getSocket() << std::endl;
+// 		//debug
+// 		// std::cout << "Close by socket: " << http->getSocket() << std::endl;
 
-		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
-		close (http->getSocket());
-		delete http;
-	}
+// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
+// 		close (http->getSocket());
+// 		delete http;
+// 	}
 
-	else if (event.events & EPOLLIN) {
+// 	else if (event.events & EPOLLIN) {
 
-		/* Received data on an existing client socket */
-		http->readSocket();
+// 		/* Received data on an existing client socket */
+// 		http->readSocket();
 		
-		//debug
-		// std::cout << "Connect by socket: " << http->getSocket() << " EPOLLIN" << std::endl;
-		// std::cout << "read success set EPOLLOUT" << std::endl;
+// 		//debug
+// 		// std::cout << "Connect by socket: " << http->getSocket() << " EPOLLIN" << std::endl;
+// 		// std::cout << "read success set EPOLLOUT" << std::endl;
 
-		// change event;
-		event.events = EPOLLOUT | EPOLLRDHUP | EPOLLET;
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, http->getSocket(), &event) == -1) {
-			close(http->getSocket());
-			delete http;
-			perror("epoll_ctl EPOLL_CTL_MOD: EPOLLIN");
-		}
-	}
+// 		// change event;
+// 		event.events = EPOLLOUT | EPOLLRDHUP | EPOLLET;
+// 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, http->getSocket(), &event) == -1) {
+// 			close(http->getSocket());
+// 			delete http;
+// 			perror("epoll_ctl EPOLL_CTL_MOD: EPOLLIN");
+// 		}
+// 	}
 
-	else if (event.events & EPOLLOUT) {
+// 	else if (event.events & EPOLLOUT) {
 
-		/* send data on an existing client socket */
-		http->writeSocket();
+// 		/* send data on an existing client socket */
+// 		http->writeSocket();
 
-		// debug
-		// std::cout << "Connect by socket: " << http->getSocket() << " EPOLLOUT" << std::endl;
+// 		// debug
+// 		// std::cout << "Connect by socket: " << http->getSocket() << " EPOLLOUT" << std::endl;
 
-		// close socket
-		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
-		close (http->getSocket());
-		delete http;
-	}
-}
+// 		// close socket
+// 		epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, http->getSocket(), NULL);
+// 		close (http->getSocket());
+// 		delete http;
+// 	}
+// }
 
 void server::Server::__accept_new_connection_request(int fd) {
     struct sockaddr_in new_addr;
@@ -194,10 +203,13 @@ void server::Server::__accept_new_connection_request(int fd) {
 		struct epoll_event ev;
         ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
         ev.data.fd = conn_sock;
-		ev.data.ptr = new MYHTTP(conn_sock, _configs); 
+		// ev.data.ptr = new MYHTTP(conn_sock, _configs); 
+		_http[conn_sock] = new MYHTTP(conn_sock, _configs);
 
         /* Allow epoll to monitor new connection */
         if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
+			delete _http[conn_sock];
+			_http.erase(conn_sock);
 			close(conn_sock);
             perror("epoll_ctl: conn_sock");
             return;
