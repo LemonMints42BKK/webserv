@@ -161,8 +161,8 @@ void cfg::Server::setErrorPage()
 			n++ ;
 		}
 	}
-	if (n != 1) throw(std::runtime_error("validate server error_page"));
-	if (access(_error_page.c_str(), R_OK) == -1) 
+	if (n > 1) throw(std::runtime_error("validate server error_page"));
+	if (_error_page.length() && (access(_error_page.c_str(), R_OK) == -1)) 
 		throw(std::runtime_error("validate server error_page: file not found"));
 }
 
@@ -247,6 +247,7 @@ void cfg::Server::setAllow()
 		}
 		if (n > 1) throw (std::runtime_error("validate allow on server"));
 	}
+	if (!server_allow.size()) server_allow.push_back("GET");
 	for(config_itc it = _configs.begin(); it != _configs.end(); it++) {
 		if((location = dynamic_cast<cfg::Location*>(*it))) {
 			if(location->getAllow().size())

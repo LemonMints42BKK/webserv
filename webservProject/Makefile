@@ -6,7 +6,7 @@ CFLAGS = -Wall -Werror -Wextra -std=c++98
 
 PARSER_PATH = parser
 HTTP_PATH = http
-NETWORK_PATH = network1
+NETWORK_PATH = network
 
 # HEADERS = ./parser/Configs.hpp ./network/Server.hpp ./http/Http.hpp
 
