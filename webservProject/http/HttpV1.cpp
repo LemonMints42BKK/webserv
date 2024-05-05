@@ -49,6 +49,9 @@ bool http::HttpV1::writeSocket()
 	return (true);
 }
 
+#define GREEN   "\033[32m"
+#define RESET   "\033[0m"
+
 bool http::HttpV1::parser()
 {
 
@@ -66,7 +69,7 @@ bool http::HttpV1::parser()
 		}
 
 		// debug 
-		std::cout << _request->getMethod() << " " << _request->getLocation() << std::endl;
+		std::cout << GREEN << _request->getMethod() << " " << _request->getLocation() << RESET << std::endl;
 	}
 
 	if (_stage == HEADER) {

@@ -58,6 +58,8 @@ namespace http
 			~Response();
 			bool response(int socket, int status, std::string const &filename, 
 				std::string const &content_type);
+			bool response(int socket, int status, std::stringstream  &file, 
+				std::string const &content_type);
 			bool response(int socket, int status);
 			void setContent(std::string const &file);
 			// void setHeader(std::string, std::string);
@@ -134,7 +136,7 @@ namespace http
 			bool isDirectory(const std::string& filename);
 			bool isFile(const std::string& filename);
 			
-			void getExiteAndStatusForResponseByPath(pid_t exited_pid, int status, std::string path);
+			void getExiteAndStatusForResponseByPath(pid_t exited_pid, int status, std::string path, std::stringstream &ss);
 			pid_t wait_Child(pid_t child_pid, int *status);
 			time_t getTime();
 			bool cgiUpload();

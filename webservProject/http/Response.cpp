@@ -118,3 +118,29 @@ void http::Response::set_default_err_page(std::string const &str)
 {
 	_default_err_page = str;
 }
+
+
+bool http::Response::response(int socket, int status, std::stringstream &file, 
+	std::string const &content_type)
+{
+	std::stringstream ss;
+	ss << file.str().length();
+	setStatusLine(status);
+	_header["Content-Type"] = content_type;
+	_header["Content-Length"] = ss.str();
+	_header["Connection"] = "Keep-Alive";
+	_header["Keep-Alive"] = "timeout=5, max=20";
+
+	ss.str("");
+	ss << _status_line << std::endl;
+	std::map<std::string, std::string>::const_iterator it = _header.begin();
+	for(; it != _header.end(); it++) {
+		ss << it->first << ": " << it->second << std::endl;
+	}
+	ss << std::endl;
+	ss << file.str();
+	ss << std::endl;
+	send(socket, ss.str().c_str(), ss.tellp(), MSG_DONTWAIT);
+
+	return (true);
+}
