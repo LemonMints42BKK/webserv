@@ -70,7 +70,7 @@ bool http::Response::response(int socket, int status, std::string const &filenam
 */
 bool http::Response::response(int socket, int status)
 {
-	std::cout << _default_err_page << std::endl;
+	// std::cout << _default_err_page << std::endl;
 	if (status == 404 && _default_err_page.length())
 	{
 		return response(socket, 404, _default_err_page, "text/html");

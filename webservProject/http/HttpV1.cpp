@@ -215,6 +215,14 @@ bool http::HttpV1::router()
 	std::string location = _request->getLocation();
 	std::string host = _request->getHeader("Host");
 	cfg::Location *loc = _configs->getLocation(host, location);
+	//check allow method
+	std::vector<std::string> methods = _configs->getAllow(host, location);
+	std::vector<std::string>::const_iterator it = std::find(methods.begin(), methods.end(), _request->getMethod());
+	if (it == methods.end()) {
+		_stage = RESPONSED;
+		return (_response->response(_socket, 405));
+	}
+
 	if (!loc) 
 		return (tryFiles());
 	else if (loc->isCgi()) {
@@ -247,19 +255,6 @@ bool http::HttpV1::router()
 		_stage = RESPONSED;
 		return true;
 	}
-	else if (loc->getLocation() == "/delete")
-	{
-		std::cout << "delete" << std::endl;
-		std::string method = _request->getMethod().c_str();
-		method = method.substr(0, method.find(' '));
-		if(method != "DELETE") {
-			_response->response(_socket, 405);
-		}
-		_request->setMethod("DELETE");
-		cgiDelete();
-		_stage = RESPONSED;
-		return _response->response(_socket, 200);
-	}
 	else if (loc->getRedirect().length()) 
 	{
 		std::cout << "redirect=" << loc->getRedirect() << std::endl;
@@ -291,7 +286,13 @@ bool http::HttpV1::tryFiles()
 	if (fileExists(file)) {
 		// std::cout << "tryFiles: found: " << file << std::endl;
 		if (isDirectory(file)) {
-			std::vector<std::string> indexs = _configs->getIndex(host, location);
+			std::vector<std::string> indexs;
+			try {
+				indexs = _configs->getIndex(host, location);
+			}
+			catch (std::exception const &e){
+				return (false);
+			}
 			// std::cout << "tryFiles: indexs: " << indexs.size() << std::endl;
 			if (!indexs.size())
 				return (false);
@@ -312,12 +313,12 @@ bool http::HttpV1::tryFiles()
 		}
 
 		//check allow method
-		std::vector<std::string> methods = _configs->getAllow(host, location);
-		std::vector<std::string>::const_iterator it = std::find(methods.begin(), methods.end(), _request->getMethod());
-		if (it == methods.end()) {
-			_stage = RESPONSED;
-			return (_response->response(_socket, 405));
-		}
+		// std::vector<std::string> methods = _configs->getAllow(host, location);
+		// std::vector<std::string>::const_iterator it = std::find(methods.begin(), methods.end(), _request->getMethod());
+		// if (it == methods.end()) {
+		// 	_stage = RESPONSED;
+		// 	return (_response->response(_socket, 405));
+		// }
 	
 		//check type
 
