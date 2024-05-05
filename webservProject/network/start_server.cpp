@@ -107,7 +107,7 @@ void Server::__runMoniter(void)
 		}
 		if (rc == 0)
 		{
-			printf("  select() timed out.  Check conn.\n");
+			// printf("  select() timed out.  Check conn.\n");
 			__checkClientTimeOut();
 			std::memset(&_working_set, 0, sizeof(_working_set));
 			timeout.tv_sec  = 5;
@@ -127,7 +127,7 @@ void Server::__checkClientTimeOut()
 			// std::cout << "Time " << _time[i] << std::endl;
 			if (!__checkIsSocketListen(i) && _time[i] + 3 < __getTime() )
 			{
-				std::cout << RED << "Time out " << i << RESET << std::endl;
+				// std::cout << RED << "Time out " << i << RESET << std::endl;
 				_close_conn = true;
 				__handle_close_conn(i);
 			}
@@ -166,7 +166,7 @@ void Server::__handle_close_conn(size_t socketfd)
 {
 	if (_close_conn)
 	{
-		printf("Close fd : %lu\n", socketfd);
+		std::cout << RED << "Close connection " << socketfd << RESET << std::endl;
 		close(socketfd);
 		FD_CLR(socketfd, &_master_set);
 		delete _http[socketfd];

@@ -5,3 +5,4 @@ libparser.a
 libhttp.a
 libnetwork.a
 a.out
+./www/upload/*
