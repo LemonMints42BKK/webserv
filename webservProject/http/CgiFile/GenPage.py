@@ -30,11 +30,11 @@ def generate_html():
         <h2>Uploaded Files:</h2>
         <ul>
     """
-    
+
     for root, dirs, files in os.walk(os.path.abspath("www/upload")):
         if files.__len__() > 0:
             for file in files:
-                html += f"<li><input type=\"button\" value=\"delete\" onclick=\"deleteFile('{file}')\" > {file} </li>"
+                html += f"<li><input type=\"button\" value=\"delete\" onclick=\"deleteFile('{file}')\" > <a href='./upload/{file}'> {file} </a></li>"
     # for file in file_list:
     #     html += f"<li>{file}</li>"
     
